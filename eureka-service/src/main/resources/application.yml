@@ -1,0 +1,15 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: eureka-server
+  cloud:
+    config:
+      uri: http://config-server:8888  # Config Server와 연결
+      fail-fast: true
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
