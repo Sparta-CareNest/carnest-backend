@@ -4,13 +4,21 @@ server:
 spring:
   application:
     name: config-server
+  config:
+    import: optional:file:.env[.properties]
+
   cloud:
     config:
       server:
         git:
-          uri: https://github.com/Sparta-CareNest/carenest-config.git
-          search-paths: config-file/**
-          default-label: main
+          uri: ${GIT_URI}
+          search-paths: ${GIT_SEARCH_PATHS}
+          default-label: ${GIT_DEFAULT_LABEL}
+          ignore-local-ssh-settings: ${GIT_IGNORE_LOCAL_SSH_SETTINGS}
+          host-key: ${SSH_HOST_KEY}
+          host-key-algorithm: ${SSH_HOST_KEY_ALGORITHM}
+          private-key: ${SSH_PRIVATE_KEY}
+          passphrase: ${SSH_PASSPHRASE}
 
 management:
   endpoints:
