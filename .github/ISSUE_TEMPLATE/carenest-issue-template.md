@@ -1,6 +1,6 @@
 ---
-name: 5ingmary Issue template
-about: 5ingmaryho's Issue Template
+name: carenest Issue template
+about: carenest's Issue Template
 title: "[domain] 짧고 명확한 제목 작성 (예: [backend] 회원가입 API 수정)"
 labels: ["bug", "feature", "refactor"]
 assignees: "@username"
