@@ -1,25 +1,45 @@
 plugins {
-    id 'java-library'
+    id 'java-library' // API vs implementation 분리를 위해 꼭 필요
 }
 
-group = 'com.carenest.business'
-version = 'unspecified'
+ext {
+    set('springCloudVersion', "2024.0.0")
+    set('querydslVersion', "5.0.0")
+}
 
-repositories {
-    mavenCentral()
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 dependencies {
-    api 'org.springframework.boot:spring-boot-starter'
-    api 'org.springframework.boot:spring-boot-starter-web'
+    // 공통으로 사용할 Spring Boot 라이브러리 - 다른 모듈에서도 사용할 수 있게 api 사용
     api 'org.springframework.boot:spring-boot-starter-data-jpa'
-    api 'org.projectlombok:lombok'
-    api 'io.jsonwebtoken:jjwt:0.12.6'
+    api 'org.springframework.boot:spring-boot-starter-validation'
+    api 'org.springframework.boot:spring-boot-starter-web'
+    api 'org.springframework.boot:spring-boot-starter-data-redis'
 
+    // QueryDSL
+    api "com.querydsl:querydsl-jpa:${querydslVersion}:jakarta"
+    annotationProcessor "com.querydsl:querydsl-apt:${querydslVersion}:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+    // Lombok (컴파일 전용)
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // 테스트 의존성
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-test {
-    useJUnitPlatform()
+// Lombok 등의 annotation processor 경로 명시
+tasks.withType(JavaCompile).configureEach {
+    options.annotationProcessorPath = configurations.annotationProcessor
+}
+
+// 공통 모듈은 실행 가능한 jar가 아니므로 bootJar 비활성화
+bootJar {
+    enabled = false
 }
