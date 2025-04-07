@@ -1,4 +1,4 @@
-package com.carenest.business.matchingservice.domain.model;
+package com.carenest.business.caregiverservice.domain.model;
 
 import java.util.UUID;
 

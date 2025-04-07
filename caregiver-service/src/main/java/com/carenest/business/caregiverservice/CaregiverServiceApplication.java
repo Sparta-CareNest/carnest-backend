@@ -1,13 +1,13 @@
-package com.carenest.business.matchingservice;
+package com.carenest.business.caregiverservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class MatchingServiceApplication {
+public class CaregiverServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(MatchingServiceApplication.class, args);
+		SpringApplication.run(CaregiverServiceApplication.class, args);
 	}
 
 }

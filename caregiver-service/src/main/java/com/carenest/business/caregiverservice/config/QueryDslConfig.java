@@ -1,4 +1,4 @@
-package com.carenest.business.matchingservice.config;
+package com.carenest.business.caregiverservice.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

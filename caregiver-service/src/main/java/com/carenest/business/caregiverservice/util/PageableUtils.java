@@ -1,4 +1,4 @@
-package com.carenest.business.matchingservice.util;
+package com.carenest.business.caregiverservice.util;
 
 import java.util.ArrayList;
 import java.util.List;

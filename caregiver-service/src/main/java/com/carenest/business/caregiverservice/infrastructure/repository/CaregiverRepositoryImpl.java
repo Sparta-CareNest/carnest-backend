@@ -1,6 +1,6 @@
-package com.carenest.business.matchingservice.infrastructure.repository;
+package com.carenest.business.caregiverservice.infrastructure.repository;
 
-import com.carenest.business.matchingservice.domain.repository.CaregiverCustomRepository;
+import com.carenest.business.caregiverservice.domain.repository.CaregiverCustomRepository;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import lombok.RequiredArgsConstructor;

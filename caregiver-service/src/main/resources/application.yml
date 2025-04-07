@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: matching-service
+    name: caregiver-service
   profiles:
     active: local
   config:
