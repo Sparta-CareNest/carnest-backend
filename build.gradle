@@ -39,7 +39,7 @@ project(':ai-service') {
 }
 
 
-project(':matching-service') {
+project(':caregiver-service') {
     dependencies {
         implementation project(':common')
     }
