@@ -69,3 +69,9 @@ project(':user-service') {
         implementation project(':common')
     }
 }
+
+project(':review-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
