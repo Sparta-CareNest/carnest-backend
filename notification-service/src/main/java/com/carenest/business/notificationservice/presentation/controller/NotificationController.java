@@ -26,21 +26,25 @@ public class NotificationController {
         NotificationResponseDto responseDto = notificationService.createNotificationWithType(
                 requestDto, NotificationType.PAYMENT_SUCCESS);
         log.info("결제 성공 알림 요청 들어옴");
-        return ResponseDto.success("결제 성공 알림 전송 완료", null);
+        return ResponseDto.success("결제 성공 알림 전송 완료", responseDto);
     }
 
     // 2. 예약 생성 알림
     @PostMapping("/reservation-created")
-    public ResponseDto<Void> sendReservationCreated(
+    public ResponseDto<NotificationResponseDto> sendReservationCreated(
             @RequestBody NotificationCreateRequestDto requestDto) {
-        return ResponseDto.success("예약 생성 알림 전송 완료", null);
+        NotificationResponseDto responseDto = notificationService.createNotificationWithType(
+                requestDto, NotificationType.RESERVATION_CREATED);
+        return ResponseDto.success("예약 생성 알림 전송 완료", responseDto);
     }
 
     // 3. 정산 완료 알림
-    @PostMapping("/settlement-complete")
-    public ResponseDto<Void> sendSettlementComplete(
+    @PostMapping("/settlement-completed")
+    public ResponseDto<NotificationResponseDto> sendSettlementCompleted(
             @RequestBody NotificationCreateRequestDto requestDto) {
-        return ResponseDto.success("정산 완료 알림 전송 완료", null);
+        NotificationResponseDto responseDto = notificationService.createNotificationWithType(
+                requestDto, NotificationType.SETTLEMENT_COMPLETE);
+        return ResponseDto.success("정산 완료 알림 전송 완료", responseDto);
     }
 
     // 4. 알림 목록 조회
