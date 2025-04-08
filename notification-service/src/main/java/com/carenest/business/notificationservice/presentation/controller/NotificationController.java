@@ -48,9 +48,10 @@ public class NotificationController {
     }
 
     // 4. 알림 목록 조회
-    @GetMapping
+    @GetMapping("/{receiverId}")
     public ResponseDto<List<NotificationResponseDto>> getNotifications(
-            @RequestParam UUID receiverId) {
-        return ResponseDto.success("알림 목록 조회 성공", List.of());
+            @PathVariable("receiverId") UUID receiverId) {
+        List<NotificationResponseDto> notifications = notificationService.getNotificationsByReceiverId(receiverId);
+        return ResponseDto.success("알림 목록 조회 성공", notifications);
     }
 }
