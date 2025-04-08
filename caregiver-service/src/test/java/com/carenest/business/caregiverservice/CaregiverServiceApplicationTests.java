@@ -1,10 +1,10 @@
-package com.carenest.business.matchingservice;
+package com.carenest.business.caregiverservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class MatchingServiceApplicationTests {
+class CaregiverServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

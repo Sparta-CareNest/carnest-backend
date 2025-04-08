@@ -18,9 +18,18 @@ repositories {
 }
 
 dependencies {
+
+    // spring-cloud
+    implementation 'org.springframework.cloud:spring-cloud-config-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
     // Lombok은 전파가 안됌
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // db
+    runtimeOnly 'org.postgresql:postgresql'
 
     implementation project(':common')
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
