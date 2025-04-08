@@ -1,4 +1,4 @@
-package com.carenest.business.reservationservice.domain.exception;
+package com.carenest.business.reservationservice.exception;
 
 public class InvalidReservationTimeException extends ReservationException {
 

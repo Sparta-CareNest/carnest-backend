@@ -1,4 +1,4 @@
-package com.carenest.business.reservationservice.domain.exception;
+package com.carenest.business.reservationservice.exception;
 
 import com.carenest.business.common.exception.BaseErrorCode;
 import com.carenest.business.common.exception.BaseException;
