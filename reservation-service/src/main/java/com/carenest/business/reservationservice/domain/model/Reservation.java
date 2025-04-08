@@ -135,4 +135,41 @@ public class Reservation {
         this.status = ReservationStatus.COMPLETED;
         this.updatedAt = LocalDateTime.now();
     }
+
+    public void updatePatientName(String patientName) {
+        this.patientName = patientName;
+    }
+
+    public void updatePatientAge(Integer patientAge) {
+        this.patientAge = patientAge;
+    }
+
+    public void updatePatientGender(Gender patientGender) {
+        this.patientGender = patientGender;
+    }
+
+    public void updatePatientCondition(String patientCondition) {
+        this.patientCondition = patientCondition;
+    }
+
+    public void updateCareAddress(String careAddress) {
+        this.careAddress = careAddress;
+    }
+
+    public void updateServicePeriod(LocalDateTime startedAt, LocalDateTime endedAt) {
+        this.startedAt = startedAt;
+        this.endedAt = endedAt;
+    }
+
+    public void updateServiceRequests(String serviceRequests) {
+        this.serviceRequests = serviceRequests;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public void changeStatusToPendingAcceptance() {
+        this.status = ReservationStatus.PENDING_ACCEPTANCE;
+    }
 }
