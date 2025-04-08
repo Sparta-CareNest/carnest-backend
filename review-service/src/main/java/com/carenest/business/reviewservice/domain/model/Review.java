@@ -1,17 +1,20 @@
 package com.carenest.business.reviewservice.domain.model;
 
 
+import com.carenest.business.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.UUID;
 
 @Entity
 @Getter
 @Table(name = "p_review")
+@SuperBuilder
 @NoArgsConstructor
-public class Review {
+public class Review extends BaseEntity {
 
     @Id
     @GeneratedValue
