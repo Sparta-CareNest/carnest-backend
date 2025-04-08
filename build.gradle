@@ -58,6 +58,12 @@ project(':reservation-service') {
     }
 }
 
+project(':payment-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
 project(':user-service') {
     dependencies {
         implementation project(':common')
