@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.DialectOverride;
+import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import com.carenest.business.caregiverservice.domain.model.category.CaregiverCategoryLocation;
@@ -33,6 +35,7 @@ import lombok.Setter;
 @Entity
 @Builder
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "p_caregiver")
 @EntityListeners(AuditingEntityListener.class)

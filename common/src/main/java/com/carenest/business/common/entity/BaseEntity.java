@@ -40,18 +40,11 @@ public abstract class BaseEntity {
 	@Builder.Default
 	private Boolean isDeleted = false;
 
-	/**
-	 * 엔티티 soft delete
-	 * @param deleteUserId 삭제자 id
-	 */
-	public void softDelete(Long deleteUserId) {
+	public void softDelete() {
 		this.deletedAt = LocalDateTime.now();
 		this.isDeleted = true;
 	}
 
-	/**
-	 * 엔티티 soft delete 취소
-	 */
 	public void restore() {
 		this.deletedAt = null;
 		this.isDeleted = false;

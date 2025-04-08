@@ -184,4 +184,15 @@ public class CaregiverService {
 			categoryLocationNames
 		);
 	}
+
+	@Transactional
+	public void deleteCaregiver(UUID caregiverId) {
+		Caregiver caregiver = caregiverRepository.findById(caregiverId)
+			.orElseThrow(()-> new CaregiverException(ErrorCode.NOT_FOUND));
+
+		caregiver.clearCategoryServices();
+		caregiver.clearCategoryLocation();
+
+		caregiver.softDelete();
+	}
 }

@@ -3,6 +3,7 @@ package com.carenest.business.caregiverservice.presentation.controller;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -66,6 +67,13 @@ public class CaregiverController {
 	}
 
 	// Delete
+	@DeleteMapping("/{caregiverId}")
+	public ResponseDto<Void> deleteCaregiver(
+		@PathVariable UUID caregiverId
+	){
+		caregiverService.deleteCaregiver(caregiverId);
+		return ResponseDto.success("간병인 정보가 삭제되었습니다.",null);
+	}
 
 
 }
