@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,11 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.service.CaregiverService;
+import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverCreateResponseDTO;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverUpdateResponseDTO;
 import com.carenest.business.common.response.ResponseDto;
 
 import lombok.RequiredArgsConstructor;
@@ -52,6 +56,14 @@ public class CaregiverController {
 	}
 
 	// Update
+	@PatchMapping("/{caregiverId}")
+	public ResponseDto<CaregiverUpdateResponseDTO> updateCaregiver(
+		@PathVariable UUID caregiverId,
+		@RequestBody CaregiverUpdateRequestDTO requestDTO
+	){
+		CaregiverUpdateResponseServiceDTO responseDTO = caregiverService.updateCaregiver(caregiverId,requestDTO);
+		return ResponseDto.success("간병인 정보가 수정되었습니다.",presentationMapper.toUpdateResponseDto(responseDTO));
+	}
 
 	// Delete
 

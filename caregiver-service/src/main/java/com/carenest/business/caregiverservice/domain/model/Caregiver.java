@@ -26,8 +26,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Entity
 @Builder
 @AllArgsConstructor
@@ -72,4 +74,11 @@ public class Caregiver extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private GenderType gender;
 
+	public void clearCategoryServices() {
+		this.caregiverCategoryServices.clear();
+	}
+
+	public void clearCategoryLocation() {
+		this.caregiverCategoryLocations.clear();
+	}
 }
