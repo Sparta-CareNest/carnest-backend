@@ -13,6 +13,9 @@ public enum ErrorCode {
 	NO_PERMISSION("C-002", "간병인 권한이 없습니다.", HttpStatus.FORBIDDEN),
 	ALREADY_REGISTERED_COMPANY("C-003", "이미 등록된 간병인 입니다.", HttpStatus.CONFLICT),
 
+	NOT_FOUND_SERVICES("CS-001", "해당 서비스를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+	NOT_FOUND_LOCATION("CL-001", "해당 지역을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+
 	;
 
 	private final String errorCode;
