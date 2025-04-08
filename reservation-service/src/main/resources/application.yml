@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: reserve-service
+    name: reservation-service
   profiles:
     active: local
   config:
