@@ -39,7 +39,7 @@ project(':ai-service') {
 }
 
 
-project(':matching-service') {
+project(':caregiver-service') {
     dependencies {
         implementation project(':common')
     }
@@ -53,6 +53,12 @@ project(':notification-service') {
 
 
 project(':reservation-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
+project(':payment-service') {
     dependencies {
         implementation project(':common')
     }
