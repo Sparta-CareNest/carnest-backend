@@ -1,6 +1,7 @@
 package com.carenest.business.caregiverservice.application.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.carenest.business.caregiverservice.application.dto.mapper.CaregiverApplicationMapper;
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.domain.model.Caregiver;
 import com.carenest.business.caregiverservice.domain.model.category.CaregiverCategoryLocation;
 import com.carenest.business.caregiverservice.domain.model.category.CaregiverCategoryService;
@@ -77,5 +79,34 @@ public class CaregiverService {
 		Caregiver saveCaregiver = caregiverRepository.save(caregiver);
 
 		return applicationMapper.toCreateResponseServiceDTO(saveCaregiver.getId());
+	}
+
+	// TODO: QueryDsl 로 수정 할 예정
+	public CaregiverReadResponseServiceDTO getCaregiver(UUID caregiverId) {
+
+		Caregiver caregiver = caregiverRepository.findById(caregiverId)
+			.orElseThrow(()-> new CaregiverException(ErrorCode.NOT_FOUND));
+
+		List<String> categoryServiceNames = caregiver.getCaregiverCategoryServices().stream()
+			.map(n -> n.getCategoryService().getName())
+			.toList();
+
+		List<String> categoryLocationNames = caregiver.getCaregiverCategoryLocations().stream()
+			.map(n -> n.getCategoryLocation().getName())
+			.toList();
+
+		return new CaregiverReadResponseServiceDTO(
+			caregiver.getId(),
+			caregiver.getUserId(),
+			caregiver.getDescription(),
+			caregiver.getRating(),
+			caregiver.getExperienceYears(),
+			caregiver.getPricePerHour(),
+			caregiver.getPricePerDay(),
+			caregiver.getApprovalStatus(),
+			caregiver.getGender(),
+			categoryServiceNames,
+			categoryLocationNames
+		);
 	}
 }
