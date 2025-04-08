@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: gateway-servivce
+    name: gateway-service
   profiles:
     active: local
   config:
@@ -13,6 +13,6 @@ spring:
     gateway:
       routes:
         - id: notification-service
-          uri: lb://NOTIFICATION-SERVICE
+          uri: lb://notification-service
           predicates:
-            - Path=/notification/**
+            - Path=/api/v1/notifications/**
