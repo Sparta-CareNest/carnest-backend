@@ -75,9 +75,27 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getUserReservations(UUID userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        // TODO: 사용자가 보호자인지 간병인인지에 따라 다른 조회 로직 구현하기
-        Page<Reservation> reservations = reservationRepository.findAll(pageable);
-        return reservations.map(ReservationResponse::new);
+        // 기본 날짜 범위 설정
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusMonths(1);
+        }
+        if (endDate == null) {
+            endDate = LocalDateTime.now().plusMonths(1);
+        }
+
+        // 보호자 ID로 조회
+        Page<Reservation> reservationsByGuardian = reservationRepository.findByGuardianIdAndStartedAtBetween(
+                userId, startDate, endDate, pageable);
+
+        if (!reservationsByGuardian.isEmpty()) {
+            return reservationsByGuardian.map(ReservationResponse::new);
+        }
+
+        // 간병인 ID로 조회
+        Page<Reservation> reservationsByCaregiver = reservationRepository.findByCaregiverIdAndStartedAtBetween(
+                userId, startDate, endDate, pageable);
+
+        return reservationsByCaregiver.map(ReservationResponse::new);
     }
 
     @Override
@@ -92,11 +110,27 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidReservationStatusException();
         }
 
-        // TODO: 예약 정보 업데이트 로직 구현하기
+        // 예약 정보 업데이트
+        if (request.getPatientName() != null) reservation.updatePatientName(request.getPatientName());
+        if (request.getPatientAge() != null) reservation.updatePatientAge(request.getPatientAge());
+        if (request.getPatientGender() != null) reservation.updatePatientGender(request.getPatientGender());
+        if (request.getPatientCondition() != null) reservation.updatePatientCondition(request.getPatientCondition());
+        if (request.getCareAddress() != null) reservation.updateCareAddress(request.getCareAddress());
+        if (request.getStartedAt() != null && request.getEndedAt() != null) {
+            if (!reservationDomainService.validateReservationTime(reservation)) {
+                throw new InvalidReservationTimeException();
+            }
+            reservation.updateServicePeriod(request.getStartedAt(), request.getEndedAt());
+        }
+        if (request.getServiceRequests() != null) reservation.updateServiceRequests(request.getServiceRequests());
 
-        reservationDomainService.createReservationHistory(reservation);
+        reservation.setUpdatedAt(LocalDateTime.now());
+        reservation.changeStatusToPendingAcceptance();
 
-        return new ReservationResponse(reservation);
+        Reservation updatedReservation = reservationRepository.save(reservation);
+        reservationDomainService.createReservationHistory(updatedReservation);
+
+        return new ReservationResponse(updatedReservation);
     }
 
     @Override
@@ -156,16 +190,39 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getReservationHistory(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        // TODO: ReservationHistory 엔티티를 페이징하여 조회하는 로직 구현하기
-        Page<Reservation> reservations = reservationRepository.findAll(pageable);
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusMonths(1);
+        }
+        if (endDate == null) {
+            endDate = LocalDateTime.now().plusMonths(1);
+        }
+
+        Page<Reservation> reservations = reservationRepository.findByStartedAtBetween(startDate, endDate, pageable);
         return reservations.map(ReservationResponse::new);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getUserReservationHistory(UUID userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        // TODO: 특정 사용자의 ReservationHistory 엔티티를 페이징하여 조회하는 로직 구현하기
-        Page<Reservation> reservations = reservationRepository.findAll(pageable);
-        return reservations.map(ReservationResponse::new);
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusMonths(1);
+        }
+        if (endDate == null) {
+            endDate = LocalDateTime.now().plusMonths(1);
+        }
+
+        // 보호자 ID로 조회
+        Page<Reservation> reservationsByGuardian = reservationRepository.findByGuardianIdAndStartedAtBetween(
+                userId, startDate, endDate, pageable);
+
+        if (!reservationsByGuardian.isEmpty()) {
+            return reservationsByGuardian.map(ReservationResponse::new);
+        }
+
+        // 간병인 ID로 조회
+        Page<Reservation> reservationsByCaregiver = reservationRepository.findByCaregiverIdAndStartedAtBetween(
+                userId, startDate, endDate, pageable);
+
+        return reservationsByCaregiver.map(ReservationResponse::new);
     }
 }
