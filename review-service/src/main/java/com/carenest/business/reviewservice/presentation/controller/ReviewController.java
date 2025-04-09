@@ -46,9 +46,8 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{reviewId}")
-    public ResponseDto<?> deleteReview(@PathVariable UUID reviewId,
-                                       @RequestParam Long userId) {
-        reviewService.deleteReview(reviewId, userId);
+    public ResponseDto<?> deleteReview(@PathVariable UUID reviewId){
+        reviewService.deleteReview(reviewId);
         return ResponseDto.success("리뷰 삭제 성공", null);
     }
 
