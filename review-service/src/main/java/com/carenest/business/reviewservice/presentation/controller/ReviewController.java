@@ -2,6 +2,7 @@ package com.carenest.business.reviewservice.presentation.controller;
 
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
+import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewResponseDto;
 import com.carenest.business.reviewservice.application.service.ReviewService;
 import jakarta.validation.Valid;
@@ -35,4 +36,13 @@ public class ReviewController {
         List<ReviewResponseDto> reponses = reviewService.getAllReviews();
         return ResponseDto.success("리뷰 전체 조회 성공", reponses);
     }
+
+    @PatchMapping("/{reviewId")
+    private ResponseDto<ReviewResponseDto> updateReview(@PathVariable UUID reviewId,
+                                                        @RequestBody @Valid ReviewUpdateRequestDto requestDto){
+        ReviewResponseDto responseDto = reviewService.updateReview(reviewId, requestDto);
+        return ResponseDto.success("리뷰 수정 성공", responseDto);
+
+    }
+
 }
