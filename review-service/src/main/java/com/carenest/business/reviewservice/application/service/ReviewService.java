@@ -43,7 +43,7 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public List<ReviewResponseDto> getAllReviews(){
-        List<Review> reviews = reviewRepository.findAll();
+        List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
         return reviews.stream()
                 .map(ReviewResponseDto::fromEntity)
                 .collect(Collectors.toList());
@@ -60,6 +60,13 @@ public class ReviewService {
         return ReviewResponseDto.fromEntity(review);
     }
 
+    @Transactional
+    public void deleteReview(UUID reviewId, Long userId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
+
+        review.softDelete(userId);
+    }
 
 
 
