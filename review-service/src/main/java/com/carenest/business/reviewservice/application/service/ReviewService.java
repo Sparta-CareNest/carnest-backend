@@ -1,6 +1,7 @@
 package com.carenest.business.reviewservice.application.service;
 
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
+import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewResponseDto;
 import com.carenest.business.reviewservice.domain.model.Review;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
@@ -47,6 +48,16 @@ public class ReviewService {
                 .map(ReviewResponseDto::fromEntity)
                 .collect(Collectors.toList());
 
+    }
+
+    @Transactional
+    public ReviewResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto){
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
+
+        review.update(requestDto.getRating(), requestDto.getContent());
+
+        return ReviewResponseDto.fromEntity(review);
     }
 
 
