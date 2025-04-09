@@ -3,6 +3,9 @@ package com.carenest.business.reviewservice.domain.model;
 
 import com.carenest.business.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
@@ -33,6 +36,10 @@ public class Review extends BaseEntity {
 
     private String content;
 
+    public void update(@Min(1) @Max(5) double rating, @NotBlank String content) {
+        this.rating = rating;
+        this.content = content;
+    }
 }
 
 
