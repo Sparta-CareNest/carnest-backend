@@ -8,6 +8,6 @@ import java.util.UUID;
 
 public interface ReviewRepository {
     Review save(Review review);
-    Optional<Review> findById(UUID orderId);
-    List<Review> findAll();
+    Optional<Review> findById(UUID reviewId);
+    List<Review> findAllByIsDeletedFalse();
 }
