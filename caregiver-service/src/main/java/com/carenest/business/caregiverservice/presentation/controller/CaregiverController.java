@@ -3,6 +3,8 @@ package com.carenest.business.caregiverservice.presentation.controller;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -10,19 +12,23 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.service.CaregiverServiceImpl;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverSearchResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverCreateResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverUpdateResponseDTO;
+import com.carenest.business.caregiverservice.util.PageableUtils;
 import com.carenest.business.common.response.ResponseDto;
 
 import lombok.RequiredArgsConstructor;
@@ -73,6 +79,21 @@ public class CaregiverController {
 	){
 		caregiverServiceImpl.deleteCaregiver(caregiverId);
 		return ResponseDto.success("간병인 정보가 삭제되었습니다.",null);
+	}
+
+	@GetMapping("/search")
+	public ResponseDto<Page<CaregiverSearchResponseDTO>> searchCaregiver(
+		@RequestParam(required = false) Integer page,
+		@RequestParam(required = false) Integer size,
+		@RequestParam(required = false) String sortDirection,
+		@RequestParam(required = false) String sortProperty,
+		@RequestParam(required = false) String location,
+		@RequestParam(required = false) String service
+	){
+		Pageable pageable = PageableUtils.customPageable(page,size,sortDirection,sortProperty);
+		Page<CaregiverSearchResponseServiceDTO> responseServiceDTO =  caregiverServiceImpl.searchCaregiver(location,service,pageable);
+
+		return ResponseDto.success("간병인 검색을 완료했습니다.", presentationMapper.toSearchResponseDto(responseServiceDTO));
 	}
 
 
