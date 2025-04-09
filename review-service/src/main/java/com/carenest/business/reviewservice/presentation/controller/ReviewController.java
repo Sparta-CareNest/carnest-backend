@@ -39,7 +39,7 @@ public class ReviewController {
     }
 
     @PatchMapping("/{reviewId}")
-    private ResponseDto<ReviewUpdateResponseDto> updateReview(@PathVariable UUID reviewId,
+    public ResponseDto<ReviewUpdateResponseDto> updateReview(@PathVariable UUID reviewId,
                                                               @RequestBody @Valid ReviewUpdateRequestDto requestDto){
         ReviewUpdateResponseDto responseDto = reviewService.updateReview(reviewId, requestDto);
         return ResponseDto.success("리뷰 수정 성공", responseDto);
