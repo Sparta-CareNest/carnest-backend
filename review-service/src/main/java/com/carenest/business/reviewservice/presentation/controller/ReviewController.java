@@ -6,10 +6,10 @@ import com.carenest.business.reviewservice.application.dto.response.ReviewRespon
 import com.carenest.business.reviewservice.application.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/reviews")
@@ -24,5 +24,15 @@ public class ReviewController {
         return ResponseDto.success("리뷰 등록 성공",responseDto);
     }
 
+    @GetMapping("/{reviewId}")
+    public ResponseDto<ReviewResponseDto> getReviewById(@PathVariable UUID reviewId){
+        ReviewResponseDto responseDto = reviewService.getReviewById(reviewId);
+        return ResponseDto.success("리뷰 조회 성공", responseDto);
+    }
 
+    @GetMapping
+    public ResponseDto<List<ReviewResponseDto>> getAllReviews(){
+        List<ReviewResponseDto> reponses = reviewService.getAllReviews();
+        return ResponseDto.success("리뷰 전체 조회 성공", reponses);
+    }
 }
