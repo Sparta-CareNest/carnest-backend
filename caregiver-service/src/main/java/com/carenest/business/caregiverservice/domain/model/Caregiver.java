@@ -4,12 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.DialectOverride;
+import org.hibernate.annotations.SQLRestriction;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import com.carenest.business.caregiverservice.domain.model.category.CaregiverCategoryLocation;
 import com.carenest.business.caregiverservice.domain.model.category.CaregiverCategoryService;
+import com.carenest.business.common.entity.BaseEntity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -22,14 +28,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Entity
 @Builder
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "p_caregiver")
-public class Caregiver {
+@EntityListeners(AuditingEntityListener.class)
+public class Caregiver extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.UUID)
@@ -67,4 +77,11 @@ public class Caregiver {
 	@Enumerated(EnumType.STRING)
 	private GenderType gender;
 
+	public void clearCategoryServices() {
+		this.caregiverCategoryServices.clear();
+	}
+
+	public void clearCategoryLocation() {
+		this.caregiverCategoryLocations.clear();
+	}
 }

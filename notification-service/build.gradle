@@ -18,6 +18,9 @@ repositories {
 }
 
 dependencies {
+	// WebSocket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
 	implementation 'org.postgresql:postgresql'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	// Eureka Client (서비스 등록)
