@@ -1,4 +1,4 @@
-package com.carenest.business.caregiverservice.domain.repository;
+package com.carenest.business.caregiverservice.infrastructure.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
