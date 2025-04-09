@@ -9,22 +9,16 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class ReviewResponseDto {
+public class ReviewUpdateResponseDto {
     private UUID reviewId;
-    private UUID reservationId;
-    private UUID caregiverId;
-    private UUID userId;
     private double rating;
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static ReviewResponseDto fromEntity(Review review) {
-        return ReviewResponseDto.builder()
+    public static ReviewUpdateResponseDto fromEntity(Review review) {
+        return ReviewUpdateResponseDto.builder()
                 .reviewId(review.getReviewId())
-                .reservationId(review.getReservationId())
-                .caregiverId(review.getCaregiverId())
-                .userId(review.getUserId())
                 .rating(review.getRating())
                 .content(review.getContent())
                 .createdAt(review.getCreatedAt())
@@ -32,4 +26,3 @@ public class ReviewResponseDto {
                 .build();
     }
 }
-

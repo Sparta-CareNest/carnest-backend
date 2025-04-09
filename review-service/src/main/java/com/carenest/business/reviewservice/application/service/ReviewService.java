@@ -2,7 +2,8 @@ package com.carenest.business.reviewservice.application.service;
 
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.domain.model.Review;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
 
     @Transactional
-    public ReviewResponseDto createReview(ReviewCreateRequestDto requestDto) {
+    public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
         Review review = Review.builder()
                 .reservationId(requestDto.getReservationId())
                 .caregiverId(requestDto.getCaregiverId())
@@ -31,33 +32,33 @@ public class ReviewService {
 
         Review savedReview = reviewRepository.save(review);
 
-        return ReviewResponseDto.fromEntity(savedReview);
+        return ReviewCreateResponseDto.fromEntity(savedReview);
     }
 
     @Transactional(readOnly = true)
-    public ReviewResponseDto getReviewById(UUID reviewId){
+    public ReviewCreateResponseDto getReviewById(UUID reviewId){
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
-        return ReviewResponseDto.fromEntity(review);
+        return ReviewCreateResponseDto.fromEntity(review);
     }
 
     @Transactional(readOnly = true)
-    public List<ReviewResponseDto> getAllReviews(){
+    public List<ReviewCreateResponseDto> getAllReviews(){
         List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
         return reviews.stream()
-                .map(ReviewResponseDto::fromEntity)
+                .map(ReviewCreateResponseDto::fromEntity)
                 .collect(Collectors.toList());
 
     }
 
     @Transactional
-    public ReviewResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto){
+    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto){
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
 
         review.update(requestDto.getRating(), requestDto.getContent());
 
-        return ReviewResponseDto.fromEntity(review);
+        return ReviewUpdateResponseDto.fromEntity(review);
     }
 
     @Transactional
