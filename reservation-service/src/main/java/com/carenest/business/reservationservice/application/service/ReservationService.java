@@ -1,8 +1,10 @@
 package com.carenest.business.reservationservice.application.service;
 
 import com.carenest.business.reservationservice.application.dto.request.ReservationCreateRequest;
+import com.carenest.business.reservationservice.application.dto.request.ReservationSearchRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationUpdateRequest;
 import com.carenest.business.reservationservice.application.dto.response.ReservationResponse;
+import com.carenest.business.reservationservice.domain.model.ReservationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -15,6 +17,8 @@ public interface ReservationService {
     ReservationResponse getReservation(UUID reservationId);
 
     Page<ReservationResponse> getReservations(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+
+    Page<ReservationResponse> searchReservations(ReservationSearchRequest request, Pageable pageable);
 
     Page<ReservationResponse> getUserReservations(UUID userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
@@ -29,4 +33,10 @@ public interface ReservationService {
     Page<ReservationResponse> getReservationHistory(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
 
     Page<ReservationResponse> getUserReservationHistory(UUID userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+
+    Page<ReservationResponse> getReservationsByStatus(ReservationStatus status, Pageable pageable);
+
+    ReservationResponse completeReservation(UUID reservationId);
+
+    ReservationResponse linkPayment(UUID reservationId, UUID paymentId);
 }
