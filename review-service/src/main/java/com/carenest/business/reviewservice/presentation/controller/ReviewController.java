@@ -37,12 +37,18 @@ public class ReviewController {
         return ResponseDto.success("리뷰 전체 조회 성공", reponses);
     }
 
-    @PatchMapping("/{reviewId")
+    @PatchMapping("/{reviewId}")
     private ResponseDto<ReviewResponseDto> updateReview(@PathVariable UUID reviewId,
                                                         @RequestBody @Valid ReviewUpdateRequestDto requestDto){
         ReviewResponseDto responseDto = reviewService.updateReview(reviewId, requestDto);
         return ResponseDto.success("리뷰 수정 성공", responseDto);
+    }
 
+    @DeleteMapping("/{reviewId}")
+    public ResponseDto<?> deleteReview(@PathVariable UUID reviewId,
+                                       @RequestParam Long userId) {
+        reviewService.deleteReview(reviewId, userId);
+        return ResponseDto.success("리뷰 삭제 성공", null);
     }
 
 }
