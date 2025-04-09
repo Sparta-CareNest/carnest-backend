@@ -1,4 +1,4 @@
-package com.carenest.business.caregiverservice.infrastructure.repository;
+package com.carenest.business.caregiverservice.infrastructure.repository.querydsl;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
