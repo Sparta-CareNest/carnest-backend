@@ -25,13 +25,15 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping("/reservations")
-    public ResponseEntity<ResponseDto<ReservationResponse>> createReservation(@RequestBody @Valid ReservationCreateRequest request) {
+    public ResponseEntity<ResponseDto<ReservationResponse>> createReservation(
+            @RequestBody @Valid ReservationCreateRequest request) {
         ReservationResponse response = reservationService.createReservation(request);
         return ResponseEntity.ok(ResponseDto.success("예약이 성공적으로 생성되었습니다.", response));
     }
 
     @GetMapping("/reservations/{reservationId}")
-    public ResponseEntity<ResponseDto<ReservationResponse>> getReservation(@PathVariable UUID reservationId) {
+    public ResponseEntity<ResponseDto<ReservationResponse>> getReservation(
+            @PathVariable UUID reservationId) {
         ReservationResponse response = reservationService.getReservation(reservationId);
         return ResponseEntity.ok(ResponseDto.success("예약 상세 정보 조회 성공", response));
     }
