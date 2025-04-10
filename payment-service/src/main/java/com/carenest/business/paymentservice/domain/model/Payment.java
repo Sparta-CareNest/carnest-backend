@@ -121,4 +121,10 @@ public class Payment {
         this.refundedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
+
+    // 결제 키 설정 메서드 추가
+    public void setPaymentKey(String paymentKey) {
+        this.paymentKey = paymentKey;
+        this.updatedAt = LocalDateTime.now();
+    }
 }
