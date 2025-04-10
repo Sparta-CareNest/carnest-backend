@@ -20,13 +20,13 @@ import com.carenest.business.caregiverservice.application.dto.response.Caregiver
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
-import com.carenest.business.caregiverservice.application.service.CaregiverServiceImpl;
-import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverSearchResponseDTO;
-import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
-import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
+import com.carenest.business.caregiverservice.application.service.CaregiverService;
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
+import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverCreateResponseDTO;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverSearchResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverUpdateResponseDTO;
 import com.carenest.business.caregiverservice.util.PageableUtils;
 import com.carenest.business.common.response.ResponseDto;
@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/v1/caregivers")
 public class CaregiverController {
 
-	private final CaregiverServiceImpl caregiverServiceImpl;
+	private final CaregiverService caregiverService;
 
 	@Qualifier("caregiverPresentationMapper")
 	private final CaregiverPresentationMapper presentationMapper;
@@ -51,14 +51,14 @@ public class CaregiverController {
 		@RequestBody CaregiverCreateRequestDTO createRequestDTO
 	){
 		CaregiverCreateRequestServiceDTO requestServiceDTO = presentationMapper.toCreateServiceDto(createRequestDTO);
-		CaregiverCreateResponseServiceDTO responseDTO = caregiverServiceImpl.createCaregiver(requestServiceDTO);
+		CaregiverCreateResponseServiceDTO responseDTO = caregiverService.createCaregiver(requestServiceDTO);
 		return ResponseDto.success("서비스 등록 요청이 접수되었습니다. 관리자 승인 후 활성화됩니다.",presentationMapper.toCreateResponseDto(responseDTO));
 	}
 
 	// Read (개인 조회)
 	@GetMapping("/{caregiverId}")
 	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetail(@PathVariable UUID caregiverId){
-		CaregiverReadResponseServiceDTO responseDTO = caregiverServiceImpl.getCaregiver(caregiverId);
+		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiver(caregiverId);
 		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
 	}
 
@@ -68,7 +68,7 @@ public class CaregiverController {
 		@PathVariable UUID caregiverId,
 		@RequestBody CaregiverUpdateRequestDTO requestDTO
 	){
-		CaregiverUpdateResponseServiceDTO responseDTO = caregiverServiceImpl.updateCaregiver(caregiverId,requestDTO);
+		CaregiverUpdateResponseServiceDTO responseDTO = caregiverService.updateCaregiver(caregiverId,requestDTO);
 		return ResponseDto.success("간병인 정보가 수정되었습니다.",presentationMapper.toUpdateResponseDto(responseDTO));
 	}
 
@@ -77,7 +77,7 @@ public class CaregiverController {
 	public ResponseDto<Void> deleteCaregiver(
 		@PathVariable UUID caregiverId
 	){
-		caregiverServiceImpl.deleteCaregiver(caregiverId);
+		caregiverService.deleteCaregiver(caregiverId);
 		return ResponseDto.success("간병인 정보가 삭제되었습니다.",null);
 	}
 
@@ -91,7 +91,7 @@ public class CaregiverController {
 		@RequestParam(required = false) String service
 	){
 		Pageable pageable = PageableUtils.customPageable(page,size,sortDirection,sortProperty);
-		Page<CaregiverSearchResponseServiceDTO> responseServiceDTO =  caregiverServiceImpl.searchCaregiver(location,service,pageable);
+		Page<CaregiverSearchResponseServiceDTO> responseServiceDTO =  caregiverService.searchCaregiver(location,service,pageable);
 
 		return ResponseDto.success("간병인 검색을 완료했습니다.", presentationMapper.toSearchResponseDto(responseServiceDTO));
 	}

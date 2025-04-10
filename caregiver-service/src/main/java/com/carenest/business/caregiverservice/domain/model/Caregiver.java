@@ -45,7 +45,7 @@ public class Caregiver extends BaseEntity {
 	private UUID id;
 
 	// 간병인 생성할때 매핑
-	@Column(name = "user_id")
+	@Column(name = "user_id",unique = true)
 	private UUID userId;
 
 	@OneToMany(mappedBy = "caregiver", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -82,5 +82,9 @@ public class Caregiver extends BaseEntity {
 
 	public void clearCategoryLocation() {
 		this.caregiverCategoryLocations.clear();
+	}
+
+	public void updateApprovalStatus(boolean check) {
+		this.approvalStatus = check;
 	}
 }
