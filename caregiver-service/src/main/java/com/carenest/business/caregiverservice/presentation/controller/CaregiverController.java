@@ -1,5 +1,6 @@
 package com.carenest.business.caregiverservice.presentation.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -13,7 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
@@ -45,13 +48,16 @@ public class CaregiverController {
 	@Qualifier("caregiverPresentationMapper")
 	private final CaregiverPresentationMapper presentationMapper;
 
+
 	// Create
-	@PostMapping
+	@PostMapping(consumes = "multipart/form-data")
 	public ResponseDto<CaregiverCreateResponseDTO> createCaregiver(
-		@RequestBody CaregiverCreateRequestDTO createRequestDTO
+		@RequestPart("data") CaregiverCreateRequestDTO createRequestDTO,
+		@RequestPart(value = "images", required = false) List<MultipartFile> multipartFiles
 	){
+
 		CaregiverCreateRequestServiceDTO requestServiceDTO = presentationMapper.toCreateServiceDto(createRequestDTO);
-		CaregiverCreateResponseServiceDTO responseDTO = caregiverService.createCaregiver(requestServiceDTO);
+		CaregiverCreateResponseServiceDTO responseDTO = caregiverService.createCaregiver(requestServiceDTO,multipartFiles);
 		return ResponseDto.success("서비스 등록 요청이 접수되었습니다. 관리자 승인 후 활성화됩니다.",presentationMapper.toCreateResponseDto(responseDTO));
 	}
 

@@ -11,7 +11,7 @@ import com.carenest.business.caregiverservice.domain.model.category.CategoryServ
 public interface CaregiverDomainService {
 
 	Caregiver createCaregiverWithCategories(CaregiverCreateRequestServiceDTO request,
-		List<CategoryService> categoryServices, List<CategoryLocation> categoryLocations);
+		List<CategoryService> categoryServices, List<CategoryLocation> categoryLocations, List<String> uploadUrls);
 
 	void deleteCaregiverWithAssociations(UUID caregiverId, Caregiver caregiver);
 

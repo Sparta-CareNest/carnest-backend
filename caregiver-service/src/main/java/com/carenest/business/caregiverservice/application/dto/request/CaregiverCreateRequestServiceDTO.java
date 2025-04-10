@@ -14,8 +14,21 @@ public record CaregiverCreateRequestServiceDTO(
 	GenderType gender,
 	List<Long> categoryLocationIds,
 	List<Long> categoryServiceIds,
-	String submittedDocuments
+	List<String> imageUrls
 ) {
+	public CaregiverCreateRequestServiceDTO withImageUrls(List<String> newImageUrls) {
+		return new CaregiverCreateRequestServiceDTO(
+			userId,
+			description,
+			experienceYears,
+			pricePerHour,
+			pricePerDay,
+			gender,
+			categoryLocationIds,
+			categoryServiceIds,
+			newImageUrls
+		);
+	}
 
 }
 
