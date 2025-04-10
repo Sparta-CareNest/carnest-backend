@@ -36,7 +36,8 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
 			.where(
 				location != null ? caregiverCategoryLocation.categoryLocation.name.eq(location) : null,
-				service != null ? caregiverCategoryService.categoryService.name.eq(service) : null
+				service != null ? caregiverCategoryService.categoryService.name.eq(service) : null,
+				caregiver.approvalStatus.eq(true)
 			)
 			.offset(pageable.getOffset())
 			.limit(pageable.getPageSize());
@@ -55,7 +56,8 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation)
 			.where(
 				location != null ? caregiverCategoryLocation.categoryLocation.name.eq(location) : null,
-				service != null ? caregiverCategoryService.categoryService.name.eq(service) : null
+				service != null ? caregiverCategoryService.categoryService.name.eq(service) : null,
+				caregiver.approvalStatus.eq(true)
 			);
 
 		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());

@@ -149,6 +149,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Page<CaregiverSearchResponseServiceDTO> searchCaregiver(String location, String service, Pageable pageable) {
 		Page<Caregiver> caregivers = caregiverRepository.searchByConditions(location, service, pageable);
 
