@@ -66,13 +66,15 @@ public class CaregiverServiceImpl implements CaregiverService {
 		return applicationMapper.toCreateResponseServiceDTO(saveCaregiver.getId());
 	}
 
-	// TODO: QueryDsl 로 수정 할 예정
-	@Override
-	public CaregiverReadResponseServiceDTO getCaregiver(UUID caregiverId) {
 
-		Caregiver caregiver = caregiverRepository.findById(caregiverId)
+	@Override
+	@Transactional(readOnly = true)
+	public CaregiverReadResponseServiceDTO getCaregiver(UUID caregiverId) {
+		// 1. N+1 문제로 fetchJoin 으로 가져옴
+		Caregiver caregiver = caregiverRepository.findCaregiverWithCategories(caregiverId)
 			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
 
+		// 2. DTO 이름으로 변환하기 위해
 		List<String> categoryServiceNames = caregiver.getCaregiverCategoryServices()
 			.stream()
 			.map(n -> n.getCategoryService().getName())
@@ -142,6 +144,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public Page<CaregiverSearchResponseServiceDTO> searchCaregiver(String location, String service, Pageable pageable) {
 		Page<Caregiver> caregivers = caregiverRepository.searchByConditions(location, service, pageable);
 
