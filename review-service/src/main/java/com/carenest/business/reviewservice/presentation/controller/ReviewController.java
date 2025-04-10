@@ -2,8 +2,10 @@ package com.carenest.business.reviewservice.presentation.controller;
 
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
+import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.application.service.ReviewService;
 import jakarta.validation.Valid;
@@ -49,6 +51,12 @@ public class ReviewController {
     public ResponseDto<?> deleteReview(@PathVariable UUID reviewId){
         reviewService.deleteReview(reviewId);
         return ResponseDto.success("리뷰 삭제 성공", null);
+    }
+
+    @GetMapping("/search")
+    public ResponseDto<List<ReviewSearchResponseDto>> searchReviews(@ModelAttribute ReviewSearchRequestDto requestDto) {
+        List<ReviewSearchResponseDto> results = reviewService.searchReviews(requestDto);
+        return ResponseDto.success("리뷰 검색 성공", results);
     }
 
 }
