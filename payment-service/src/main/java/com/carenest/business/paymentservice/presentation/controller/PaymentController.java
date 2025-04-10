@@ -4,6 +4,9 @@ import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.paymentservice.application.dto.request.PaymentCompleteRequest;
 import com.carenest.business.paymentservice.application.dto.request.PaymentCreateRequest;
 import com.carenest.business.paymentservice.application.dto.request.RefundRequest;
+import com.carenest.business.paymentservice.application.dto.response.PaymentHistoryDetailResponse;
+import com.carenest.business.paymentservice.application.dto.response.PaymentHistoryResponse;
+import com.carenest.business.paymentservice.application.dto.response.PaymentListResponse;
 import com.carenest.business.paymentservice.application.dto.response.PaymentResponse;
 import com.carenest.business.paymentservice.application.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +30,13 @@ public class PaymentController {
     @PostMapping("/payments")
     public ResponseEntity<ResponseDto<PaymentResponse>> createPayment(@RequestBody PaymentCreateRequest request) {
         PaymentResponse response = paymentService.createPayment(request);
-        return ResponseEntity.ok(ResponseDto.success("결제 정보가 성공적으로 생성되었습니다.", response));
+        return ResponseEntity.ok(ResponseDto.success("결제가 성공적으로 처리되었습니다.", response));
     }
 
     @GetMapping("/payments/{paymentId}")
     public ResponseEntity<ResponseDto<PaymentResponse>> getPayment(@PathVariable UUID paymentId) {
         PaymentResponse response = paymentService.getPayment(paymentId);
-        return ResponseEntity.ok(ResponseDto.success("결제 정보 조회 성공", response));
+        return ResponseEntity.ok(ResponseDto.success("결제 상세 정보 조회 성공", response));
     }
 
     @GetMapping("/reservations/{reservationId}/payment")
@@ -43,22 +46,22 @@ public class PaymentController {
     }
 
     @GetMapping("/payments")
-    public ResponseEntity<ResponseDto<Page<PaymentResponse>>> getPayments(
+    public ResponseEntity<ResponseDto<Page<PaymentListResponse>>> getPayments(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PaymentResponse> responses = paymentService.getPayments(startDate, endDate, pageable);
-        return ResponseEntity.ok(ResponseDto.success("결제 목록 조회 성공", responses));
+        Page<PaymentListResponse> responses = paymentService.getPaymentList(startDate, endDate, pageable);
+        return ResponseEntity.ok(ResponseDto.success("결제 내역 조회 성공", responses));
     }
 
     @GetMapping("/users/{userId}/payments")
-    public ResponseEntity<ResponseDto<Page<PaymentResponse>>> getUserPayments(
+    public ResponseEntity<ResponseDto<Page<PaymentListResponse>>> getUserPayments(
             @PathVariable UUID userId,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PaymentResponse> responses = paymentService.getUserPayments(userId, startDate, endDate, pageable);
-        return ResponseEntity.ok(ResponseDto.success("사용자별 결제 목록 조회 성공", responses));
+        Page<PaymentListResponse> responses = paymentService.getUserPaymentList(userId, startDate, endDate, pageable);
+        return ResponseEntity.ok(ResponseDto.success("사용자별 결제 내역 조회 성공", responses));
     }
 
     @PatchMapping("/payments/{paymentId}/complete")
@@ -72,9 +75,9 @@ public class PaymentController {
     @PatchMapping("/payments/{paymentId}/cancel")
     public ResponseEntity<ResponseDto<PaymentResponse>> cancelPayment(
             @PathVariable UUID paymentId,
-            @RequestBody String cancelReason) {
-        PaymentResponse response = paymentService.cancelPayment(paymentId, cancelReason);
-        return ResponseEntity.ok(ResponseDto.success("결제가 성공적으로 취소되었습니다.", response));
+            @RequestBody RefundRequest request) {
+        PaymentResponse response = paymentService.cancelPayment(paymentId, request.getCancelReason());
+        return ResponseEntity.ok(ResponseDto.success("결제 취소가 접수되었습니다.", response));
     }
 
     @PatchMapping("/payments/{paymentId}/refund")
@@ -85,22 +88,30 @@ public class PaymentController {
         return ResponseEntity.ok(ResponseDto.success("환불이 성공적으로 처리되었습니다.", response));
     }
 
+    @GetMapping("/payments/{paymentId}/history")
+    public ResponseEntity<ResponseDto<Page<PaymentHistoryResponse>>> getPaymentHistory(
+            @PathVariable UUID paymentId,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Page<PaymentHistoryResponse> responses = paymentService.getPaymentHistoryById(paymentId, pageable);
+        return ResponseEntity.ok(ResponseDto.success("결제 이력 조회 성공", responses));
+    }
+
     @GetMapping("/payments/history")
-    public ResponseEntity<ResponseDto<Page<PaymentResponse>>> getPaymentHistory(
+    public ResponseEntity<ResponseDto<Page<PaymentHistoryDetailResponse>>> getAllPaymentHistory(
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PaymentResponse> responses = paymentService.getPaymentHistory(startDate, endDate, pageable);
+        Page<PaymentHistoryDetailResponse> responses = paymentService.getAllPaymentHistory(startDate, endDate, pageable);
         return ResponseEntity.ok(ResponseDto.success("결제 이력 조회 성공", responses));
     }
 
     @GetMapping("/users/{userId}/payments/history")
-    public ResponseEntity<ResponseDto<Page<PaymentResponse>>> getUserPaymentHistory(
+    public ResponseEntity<ResponseDto<Page<PaymentHistoryDetailResponse>>> getUserPaymentHistory(
             @PathVariable UUID userId,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
-        Page<PaymentResponse> responses = paymentService.getUserPaymentHistory(userId, startDate, endDate, pageable);
+        Page<PaymentHistoryDetailResponse> responses = paymentService.getUserPaymentHistory(userId, startDate, endDate, pageable);
         return ResponseEntity.ok(ResponseDto.success("사용자별 결제 이력 조회 성공", responses));
     }
 }

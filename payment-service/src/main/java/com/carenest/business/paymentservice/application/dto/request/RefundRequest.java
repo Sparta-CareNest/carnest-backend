@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 @Setter
 public class RefundRequest {
     private String cancelReason;
-    private BigDecimal refundAmount;
     private String refundBank;
     private String refundAccount;
     private String refundAccountOwner;
+    private BigDecimal refundAmount;
 }
