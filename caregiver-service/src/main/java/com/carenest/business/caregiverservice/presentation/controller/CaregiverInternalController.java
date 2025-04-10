@@ -29,7 +29,7 @@ public class CaregiverInternalController {
 	){
 		caregiverService.updateCaregiverStatus(id,approvalStatusCheck);
 		return ResponseDto.success(null);
-	};
+	}
 
 
 
