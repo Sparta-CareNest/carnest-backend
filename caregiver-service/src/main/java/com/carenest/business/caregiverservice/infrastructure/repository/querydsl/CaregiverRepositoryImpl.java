@@ -5,6 +5,8 @@ import static com.carenest.business.caregiverservice.domain.model.category.QCare
 import static com.carenest.business.caregiverservice.domain.model.category.QCaregiverCategoryService.*;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -57,5 +59,17 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			);
 
 		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());
+	}
+
+	@Override
+	public Optional<Caregiver> findCaregiverWithCategories(UUID caregiverId) {
+		Caregiver result = jpaQueryFactory
+			.selectFrom(caregiver)
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
+			.where(caregiver.id.eq(caregiverId))
+			.fetchOne();
+
+		return Optional.ofNullable(result);
 	}
 }
