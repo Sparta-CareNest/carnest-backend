@@ -1,6 +1,7 @@
 package com.carenest.business.reservationservice.domain.repository;
 
 import com.carenest.business.reservationservice.domain.model.Reservation;
+import com.carenest.business.reservationservice.domain.model.ReservationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface ReservationRepository extends JpaRepository<Reservation, UUID> {
+public interface ReservationRepository extends JpaRepository<Reservation, UUID>, ReservationRepositoryCustom {
     List<Reservation> findByGuardianId(UUID guardianId);
 
     List<Reservation> findByCaregiverId(UUID caregiverId);
@@ -32,4 +33,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, UUID> 
     Page<Reservation> findByGuardianIdAndStartedAtBetween(UUID guardianId, LocalDateTime start, LocalDateTime end, Pageable pageable);
 
     Page<Reservation> findByCaregiverIdAndStartedAtBetween(UUID caregiverId, LocalDateTime start, LocalDateTime end, Pageable pageable);
+
+    Page<Reservation> findByStatus(ReservationStatus status, Pageable pageable);
 }

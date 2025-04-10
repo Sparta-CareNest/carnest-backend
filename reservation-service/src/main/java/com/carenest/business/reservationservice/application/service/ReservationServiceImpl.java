@@ -1,11 +1,11 @@
 package com.carenest.business.reservationservice.application.service;
 
 import com.carenest.business.reservationservice.application.dto.request.ReservationCreateRequest;
+import com.carenest.business.reservationservice.application.dto.request.ReservationSearchRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationUpdateRequest;
 import com.carenest.business.reservationservice.application.dto.response.ReservationResponse;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
-import com.carenest.business.reservationservice.domain.repository.ReservationHistoryRepository;
 import com.carenest.business.reservationservice.domain.repository.ReservationRepository;
 import com.carenest.business.reservationservice.domain.service.ReservationDomainService;
 import com.carenest.business.reservationservice.exception.*;
@@ -23,7 +23,6 @@ import java.util.UUID;
 public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepository;
-    private final ReservationHistoryRepository reservationHistoryRepository;
     private final ReservationDomainService reservationDomainService;
 
     @Override
@@ -68,7 +67,29 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getReservations(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        Page<Reservation> reservations = reservationRepository.findAll(pageable);
+        if (startDate == null) {
+            startDate = LocalDateTime.now().minusMonths(1);
+        }
+        if (endDate == null) {
+            endDate = LocalDateTime.now().plusMonths(1);
+        }
+
+        Page<Reservation> reservations = reservationRepository.findByStartedAtBetween(startDate, endDate, pageable);
+        return reservations.map(ReservationResponse::new);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReservationResponse> searchReservations(ReservationSearchRequest request, Pageable pageable) {
+        Page<Reservation> reservations = reservationRepository.findBySearchCriteria(
+                request.getGuardianId(),
+                request.getCaregiverId(),
+                request.getPatientName(),
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getStatus(),
+                pageable
+        );
         return reservations.map(ReservationResponse::new);
     }
 
@@ -224,5 +245,49 @@ public class ReservationServiceImpl implements ReservationService {
                 userId, startDate, endDate, pageable);
 
         return reservationsByCaregiver.map(ReservationResponse::new);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReservationResponse> getReservationsByStatus(ReservationStatus status, Pageable pageable) {
+        Page<Reservation> reservations = reservationRepository.findByStatus(status, pageable);
+        return reservations.map(ReservationResponse::new);
+    }
+
+    @Override
+    @Transactional
+    public ReservationResponse completeReservation(UUID reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(ReservationNotFoundException::new);
+
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new InvalidReservationStatusException();
+        }
+
+        reservation.completeService();
+        reservationRepository.save(reservation);
+
+        reservationDomainService.createReservationHistory(reservation);
+
+        return new ReservationResponse(reservation);
+    }
+
+    @Override
+    @Transactional
+    public ReservationResponse linkPayment(UUID reservationId, UUID paymentId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(ReservationNotFoundException::new);
+
+        if (reservation.getPaymentId() != null) {
+            throw new PaymentAlreadyProcessedException();
+        }
+
+        reservation.linkPayment(paymentId);
+        reservation.changeStatusToPendingAcceptance();
+
+        Reservation updatedReservation = reservationRepository.save(reservation);
+        reservationDomainService.createReservationHistory(updatedReservation);
+
+        return new ReservationResponse(updatedReservation);
     }
 }

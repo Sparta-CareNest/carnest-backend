@@ -1,9 +1,9 @@
 server:
-  port: 8084
+  port: 9030
 
 spring:
   application:
-    name: reserve-service
+    name: reservation-service
   profiles:
     active: local
   config:
