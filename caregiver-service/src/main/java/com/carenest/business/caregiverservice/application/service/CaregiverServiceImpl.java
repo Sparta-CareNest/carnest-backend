@@ -16,7 +16,6 @@ import com.carenest.business.caregiverservice.application.dto.response.Caregiver
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.domain.model.Caregiver;
-import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.carenest.business.caregiverservice.domain.model.category.CategoryLocation;
 import com.carenest.business.caregiverservice.domain.model.category.CategoryService;
 import com.carenest.business.caregiverservice.domain.service.CaregiverDomainService;
@@ -156,6 +155,15 @@ public class CaregiverServiceImpl implements CaregiverService {
 			caregiver.getPricePerDay(),
 			caregiver.getGender()
 		));
+	}
+
+	@Override
+	@Transactional
+	public void updateCaregiverStatus(UUID id, boolean approvalStatusCheck) {
+		Caregiver caregiver = caregiverRepository.findById(id).orElseThrow(()->
+			new CaregiverException(ErrorCode.NOT_FOUND));
+
+		caregiverDomainService.caregiverApprovalStatusCheck(caregiver,approvalStatusCheck);
 	}
 
 }

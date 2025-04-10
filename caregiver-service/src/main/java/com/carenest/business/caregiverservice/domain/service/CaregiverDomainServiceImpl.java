@@ -90,6 +90,11 @@ public class CaregiverDomainServiceImpl implements CaregiverDomainService {
 	}
 
 	@Override
+	public void caregiverApprovalStatusCheck(Caregiver caregiver, boolean check) {
+		caregiver.updateApprovalStatus(check);
+	}
+
+	@Override
 	public void deleteCaregiverWithAssociations(UUID caregiverId, Caregiver caregiver) {
 		caregiver.clearCategoryServices();
 		caregiver.clearCategoryLocation();
