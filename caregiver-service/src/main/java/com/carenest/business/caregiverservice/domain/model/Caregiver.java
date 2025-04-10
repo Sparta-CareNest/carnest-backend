@@ -1,10 +1,9 @@
 package com.carenest.business.caregiverservice.domain.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
-import org.hibernate.annotations.DialectOverride;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -51,11 +50,11 @@ public class Caregiver extends BaseEntity {
 
 	@OneToMany(mappedBy = "caregiver", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
-	private List<CaregiverCategoryLocation> caregiverCategoryLocations = new ArrayList<>();
+	private Set<CaregiverCategoryLocation> caregiverCategoryLocations = new HashSet<>();
 
 	@OneToMany(mappedBy = "caregiver", cascade = CascadeType.ALL, orphanRemoval = true)
 	@Builder.Default
-	private List<CaregiverCategoryService> caregiverCategoryServices = new ArrayList<>();
+	private Set<CaregiverCategoryService> caregiverCategoryServices = new HashSet<>();
 
 	@Column(length = 1000)
 	private String description;

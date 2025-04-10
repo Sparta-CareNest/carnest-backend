@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,8 +13,10 @@ import com.carenest.business.caregiverservice.application.dto.mapper.CaregiverAp
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.domain.model.Caregiver;
+import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.carenest.business.caregiverservice.domain.model.category.CategoryLocation;
 import com.carenest.business.caregiverservice.domain.model.category.CategoryService;
 import com.carenest.business.caregiverservice.domain.service.CaregiverDomainService;
@@ -137,4 +141,21 @@ public class CaregiverServiceImpl implements CaregiverService {
 			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
 		caregiverDomainService.deleteCaregiverWithAssociations(caregiverId, caregiver);
 	}
+
+	@Override
+	public Page<CaregiverSearchResponseServiceDTO> searchCaregiver(String location, String service, Pageable pageable) {
+		Page<Caregiver> caregivers = caregiverRepository.searchByConditions(location, service, pageable);
+
+
+		return caregivers.map(caregiver -> new CaregiverSearchResponseServiceDTO(
+			caregiver.getId(),
+			caregiver.getDescription(),
+			caregiver.getRating(),
+			caregiver.getExperienceYears(),
+			caregiver.getPricePerHour(),
+			caregiver.getPricePerDay(),
+			caregiver.getGender()
+		));
+	}
+
 }
