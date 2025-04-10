@@ -1,11 +1,16 @@
 package com.carenest.business.reviewservice.application.service;
 
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
+import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.domain.model.Review;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
+import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCustom;
+import com.carenest.business.reviewservice.exception.ErrorCode;
+import com.carenest.business.reviewservice.exception.ReviewException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +24,7 @@ import java.util.stream.Collectors;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ReviewRepositoryCustom reviewRepositoryCustom;
 
     @Transactional
     public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
@@ -38,7 +44,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public ReviewCreateResponseDto getReviewById(UUID reviewId){
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
+                .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
         return ReviewCreateResponseDto.fromEntity(review);
     }
 
@@ -54,7 +60,7 @@ public class ReviewService {
     @Transactional
     public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto){
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
+                .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
 
         review.update(requestDto.getRating(), requestDto.getContent());
 
@@ -62,13 +68,20 @@ public class ReviewService {
     }
 
     @Transactional
-    public void deleteReview(UUID reviewId, Long userId) {
+    public void deleteReview(UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 리뷰가 없습니다."));
+                .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
 
-        review.softDelete(userId);
+        review.softDelete();
     }
 
+    @Transactional(readOnly = true)
+    public List<ReviewSearchResponseDto> searchReviews(ReviewSearchRequestDto searchRequestDto) {
+        List<Review> reviews = reviewRepositoryCustom.searchReviews(searchRequestDto);
 
+        return reviews.stream()
+                .map(ReviewSearchResponseDto::fromEntity)
+                .toList();
+    }
 
 }
