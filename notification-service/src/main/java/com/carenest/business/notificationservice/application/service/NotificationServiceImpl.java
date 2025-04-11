@@ -65,4 +65,12 @@ public class NotificationServiceImpl implements NotificationService{
                 ))
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public void markAsRead(UUID notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 알림이 존재하지 않습니다."));
+        notification.markAsRead();
+        notificationRepository.save(notification);
+    }
 }
