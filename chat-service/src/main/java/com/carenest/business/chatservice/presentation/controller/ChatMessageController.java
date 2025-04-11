@@ -14,20 +14,10 @@ import org.springframework.stereotype.Controller;
 @RequiredArgsConstructor
 public class ChatMessageController {
 
-    private final SimpMessagingTemplate messagingTemplate;
     private final ChatMessageService chatMessageService;
 
     @MessageMapping("/chat/message") // 클라이언트는 /pub/chat/message 로 메시지 보냄
     public void sendMessage(@Payload ChatMessageRequestDto messageDto) {
         chatMessageService.sendMessage(messageDto);
-
-        messagingTemplate.convertAndSend(
-                "/sub/chat/rooms/" + messageDto.getChatRoomId(),
-                ChatMessageResponseDto.builder()
-                        .id(messageDto.getChatRoomId())
-                        .senderId(messageDto.getSenderId())
-                        .message(messageDto.getMessage())
-                        .build()
-        );
     }
 }
