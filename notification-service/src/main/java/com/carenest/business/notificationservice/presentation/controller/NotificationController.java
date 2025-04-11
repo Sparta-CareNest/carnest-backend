@@ -54,4 +54,12 @@ public class NotificationController {
         List<NotificationResponseDto> notifications = notificationService.getNotificationsByReceiverId(receiverId);
         return ResponseDto.success("알림 목록 조회 성공", notifications);
     }
+
+    // 5. 알림 읽음 처리 기능
+    @PatchMapping("/{notificationId}/read")
+    public ResponseDto<Void> markAsRead(@PathVariable("notificationId") UUID notificationId) {
+        notificationService.markAsRead(notificationId);
+        return ResponseDto.success("알림 읽음 처리 완료", null);
+    }
+
 }
