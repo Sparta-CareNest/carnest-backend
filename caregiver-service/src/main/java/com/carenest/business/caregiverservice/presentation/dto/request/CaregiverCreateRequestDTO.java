@@ -19,6 +19,5 @@ public record CaregiverCreateRequestDTO(
 	@NotNull @Min(0) Integer pricePerDay,
 	@NotNull GenderType gender,
 	@NotNull @Size(min = 1) List<Long> categoryLocationIds,
-	@NotNull @Size(min = 1) List<Long> categoryServiceIds,
-	String submittedDocuments
+	@NotNull @Size(min = 1) List<Long> categoryServiceIds
 ) {}

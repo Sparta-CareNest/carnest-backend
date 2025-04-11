@@ -28,6 +28,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-config-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
     // Lombok은 전파가 안됌
     compileOnly 'org.projectlombok:lombok'

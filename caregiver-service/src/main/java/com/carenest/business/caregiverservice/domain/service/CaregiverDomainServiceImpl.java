@@ -22,7 +22,7 @@ public class CaregiverDomainServiceImpl implements CaregiverDomainService {
 	public Caregiver createCaregiverWithCategories(
 		CaregiverCreateRequestServiceDTO request,
 		List<CategoryService> categoryServices,
-		List<CategoryLocation> categoryLocations) {
+		List<CategoryLocation> categoryLocations, List<String> uploadUrls) {
 
 		Caregiver caregiver = Caregiver.builder()
 			.userId(request.userId())
@@ -31,7 +31,6 @@ public class CaregiverDomainServiceImpl implements CaregiverDomainService {
 			.pricePerDay(request.pricePerDay())
 			.pricePerHour(request.pricePerHour())
 			.gender(request.gender())
-			.submittedDocuments(request.submittedDocuments())
 			.build();
 
 		// ID 리스트 기준으로 categoryService 연결
@@ -51,6 +50,9 @@ public class CaregiverDomainServiceImpl implements CaregiverDomainService {
 				.build())
 			.toList();
 
+
+
+		caregiver.getSubmittedDocuments().addAll(uploadUrls);
 		caregiver.getCaregiverCategoryServices().addAll(services);
 		caregiver.getCaregiverCategoryLocations().addAll(locations);
 
