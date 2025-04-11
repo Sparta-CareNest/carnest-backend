@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface NotificationService {
     NotificationResponseDto createNotificationWithType(NotificationCreateRequestDto requestDto, NotificationType notificationType);
     List<NotificationResponseDto> getNotificationsByReceiverId(UUID receiverId);
+    void markAsRead(UUID notificationId);
+
 }
