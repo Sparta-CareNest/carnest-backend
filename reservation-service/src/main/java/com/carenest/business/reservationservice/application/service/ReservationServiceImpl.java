@@ -6,6 +6,7 @@ import com.carenest.business.reservationservice.application.dto.request.Reservat
 import com.carenest.business.reservationservice.application.dto.response.ReservationResponse;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
+import com.carenest.business.reservationservice.domain.model.PaymentStatus;
 import com.carenest.business.reservationservice.domain.repository.ReservationRepository;
 import com.carenest.business.reservationservice.domain.service.ReservationDomainService;
 import com.carenest.business.reservationservice.exception.*;
@@ -30,7 +31,9 @@ public class ReservationServiceImpl implements ReservationService {
     public ReservationResponse createReservation(ReservationCreateRequest request) {
         Reservation reservation = new Reservation(
                 request.getGuardianId(),
+                request.getGuardianName(),
                 request.getCaregiverId(),
+                request.getCaregiverName(),
                 request.getPatientName(),
                 request.getPatientAge(),
                 request.getPatientGender(),
@@ -41,7 +44,7 @@ public class ReservationServiceImpl implements ReservationService {
                 request.getServiceType(),
                 request.getServiceRequests(),
                 request.getTotalAmount(),
-                null
+                request.getServiceFee()
         );
 
         if (!reservationDomainService.validateReservationTime(reservation)) {
@@ -164,7 +167,7 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidReservationStatusException();
         }
 
-        reservation.acceptByCaregiver();
+        reservation.acceptByCaregiver(caregiverNote);
         reservationRepository.save(reservation);
 
         reservationDomainService.createReservationHistory(reservation);
@@ -201,6 +204,12 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         reservation.cancelByGuardian(cancelReason);
+
+        // 결제 상태 업데이트
+        if (reservation.getPaymentStatus() == PaymentStatus.PAID) {
+            // TODO: 환불 처리 로직 추가하기
+        }
+
         reservationRepository.save(reservation);
 
         reservationDomainService.createReservationHistory(reservation);
