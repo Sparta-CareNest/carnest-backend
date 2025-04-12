@@ -2,6 +2,7 @@ package com.carenest.business.userservice.application.service;
 
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
+import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
 import com.carenest.business.userservice.domain.model.User;
 import com.carenest.business.userservice.domain.model.UserRoleEnum;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -88,24 +90,26 @@ public class UserService {
 
         return UserInfoResponseDTO.from(user);
     }
-//
-//    // 내 정보 수정
-//    @Transactional
-//    public UpdateUserResponseDTO updateMyInfo(UpdateUserRequestDTO request) {
-//        // 현재 인증된 사용자 정보 가져오기
-//        String currentUsername = "현재_로그인한_사용자"; // 예시
-//
-//        User user = userRepository.findByUsername(currentUsername)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-//
-//        // 요청 정보로 업데이트
-//        // 실제 구현 시 User 클래스에 updateInfo 메서드 추가 필요
-//        user.setNickname(request.getNickname());
-//        user.setPhoneNumber(request.getPhoneNumber());
-//        User updatedUser = userRepository.save(user);
-//
-//        return new UpdateUserResponseDTO(updatedUser.getNickname(), updatedUser.getPhoneNumber());
-//    }
+
+    // 내 정보 수정
+    @Transactional
+    public UpdateUserResponseDTO updateMyInfo(AuthUserInfo authUserInfo,
+                                               UpdateUserRequestDTO request) {
+
+        User user = userRepository.findById(authUserInfo.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        User updated = user.toBuilder()
+                .nickname(request.getNickname() != null ? request.getNickname() : user.getNickname())
+                .email(request.getEmail() != null ? request.getEmail() : user.getEmail())
+                .name(request.getName() != null ? request.getName() : user.getName())
+                .phoneNumber(request.getPhoneNumber() != null ? request.getPhoneNumber() : user.getPhoneNumber())
+                .build();
+
+        User updatedUser = userRepository.save(updated);
+
+        return UpdateUserResponseDTO.from(updatedUser);
+    }
 //
 //    // 회원 탈퇴
 //    @Transactional
@@ -123,24 +127,5 @@ public class UserService {
 //        userRepository.save(user);
 //
 //        return new WithdrawalResponseDTO(true, "회원 탈퇴가 완료되었습니다.");
-//    }
-//
-//    // 간병인 프로필 조회 (보호자용)
-//    @Transactional(readOnly = true)
-//    public CaregiverProfileResponseDTO getCaregiverProfile() {
-//        // 현재는 UUID를 사용하므로 String 또는 UUID 타입으로 처리해야 함
-//        String caregiverId = "caregiverId"; // 예시
-//
-//        // 실제 구현 시 findCaregiverById 메서드 추가 필요
-//        User caregiver = userRepository.findById(java.util.UUID.fromString(caregiverId))
-//                .orElseThrow(() -> new IllegalArgumentException("간병인을 찾을 수 없습니다."));
-//
-//        // CaregiverProfileResponseDTO 구현 필요
-//        return new CaregiverProfileResponseDTO(
-//                caregiver.getName(),
-//                "경력 정보", // 예시값 - 실제로는 User 클래스에 필드 추가 필요
-//                "자격증 정보", // 예시값 - 실제로는 User 클래스에 필드 추가 필요
-//                "소개글", // 예시값 - 실제로는 User 클래스에 필드 추가 필요
-//                4.5f); // 예시값 - 실제로는 User 클래스에 필드 추가 필요
 //    }
 }

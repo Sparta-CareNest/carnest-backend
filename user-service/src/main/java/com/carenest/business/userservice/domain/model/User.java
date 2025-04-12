@@ -15,7 +15,7 @@ import com.carenest.business.userservice.domain.model.UserRoleEnum;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class User extends BaseEntity {
 
     @Id
