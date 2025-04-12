@@ -1,5 +1,6 @@
 package com.carenest.business.reservationservice.domain.service;
 
+import com.carenest.business.common.model.UserRole;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.model.ReservationHistory;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
@@ -36,25 +37,26 @@ public class ReservationDomainServiceImpl implements ReservationDomainService {
 
         // TODO: 실제 사용자 정보를 가져오는 로직 필요
         String createdBy = "system";
-        String role = "SYSTEM";
+        UserRole role = UserRole.SYSTEM;
 
         // 상태에 따라 작성자 설정
         switch (reservation.getStatus()) {
             case PENDING_PAYMENT:
                 createdBy = reservation.getGuardianId().toString();
-                role = "GUARDIAN";
+                role = UserRole.GUARDIAN;
                 break;
             case CONFIRMED:
             case REJECTED:
                 createdBy = reservation.getCaregiverId().toString();
-                role = "CAREGIVER";
+                role = UserRole.CAREGIVER;
                 break;
             case CANCELLED:
                 createdBy = reservation.getGuardianId().toString();
-                role = "GUARDIAN";
+                role = UserRole.GUARDIAN;
                 break;
         }
 
+        // UserRole enum을 직접 전달
         history.setCreatedBy(createdBy, role);
         reservationHistoryRepository.save(history);
     }
