@@ -2,16 +2,15 @@ package com.carenest.business.userservice.application.service;
 
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
-import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
 import com.carenest.business.userservice.domain.model.User;
 import com.carenest.business.userservice.domain.model.UserRoleEnum;
 import com.carenest.business.userservice.domain.repository.UserRepository;
 import com.carenest.business.userservice.infrastructure.security.JwtUtil;
+import com.carenest.business.common.annotation.AuthUserInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Service
@@ -65,9 +64,8 @@ public class UserService {
         }
 
         // JWT 생성
-        String accessToken = jwtUtil.createToken(user.getUsername(), user.getRole());
-        String refreshToken = jwtUtil.createToken(user.getUsername(), user.getRole());
-        jwtUtil.addJwtToCookie(refreshToken, response);
+        String accessToken = jwtUtil.createToken(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
+        String refreshToken = jwtUtil.createToken(user.getUserId(), user.getUsername(), user.getEmail(), user.getRole());
 
         return LoginResponseDTO.of(accessToken,refreshToken, user);
     }
@@ -82,17 +80,14 @@ public class UserService {
 //        System.out.println(currentUsername + "의 토큰이 무효화되었습니다.");
 //    }
 //
-//    // 내 정보 조회
-//    @Transactional(readOnly = true)
-//    public UserInfoResponseDTO getMyInfo() {
-//        // 현재 인증된 사용자 정보 가져오기
-//        String currentUsername = "현재_로그인한_사용자"; // 예시
-//
-//        User user = userRepository.findByUsername(currentUsername)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-//
-//        return new UserInfoResponseDTO(user.getEmail(), user.getNickname(), user.getPhoneNumber());
-//    }
+    // 내 정보 조회
+    public UserInfoResponseDTO getMyInfo(AuthUserInfo authUserInfo) {
+
+        User user = userRepository.findById(authUserInfo.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        return UserInfoResponseDTO.from(user);
+    }
 //
 //    // 내 정보 수정
 //    @Transactional

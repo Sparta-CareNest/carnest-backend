@@ -3,9 +3,10 @@ package com.carenest.business.userservice.presentation.controller;
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
-import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
 import com.carenest.business.userservice.application.service.UserService;
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,12 +39,12 @@ public class UserController {
 //        return ResponseDto.success("로그아웃이 완료되었습니다.", null);
 //    }
 //
-//    // 내 정보 조회
-//    @GetMapping("/me")
-//    public ResponseDto<UserInfoResponseDTO> getMyInfo() {
-//        UserInfoResponseDTO response = userService.getMyInfo();
-//        return ResponseDto.success(response);
-//    }
+    // 내 정보 조회
+    @GetMapping("/me")
+    public ResponseDto<UserInfoResponseDTO> getMyInfo(@AuthUser AuthUserInfo authUserInfo) {
+        UserInfoResponseDTO response = userService.getMyInfo(authUserInfo);
+        return ResponseDto.success("내 정보 조회가 완료되었습니다.",response);
+    }
 //
 //    // 내 정보 수정
 //    @PutMapping("/me")
