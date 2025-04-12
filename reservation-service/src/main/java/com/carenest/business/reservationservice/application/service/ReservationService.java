@@ -3,8 +3,8 @@ package com.carenest.business.reservationservice.application.service;
 import com.carenest.business.reservationservice.application.dto.request.ReservationCreateRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationSearchRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationUpdateRequest;
-import com.carenest.business.reservationservice.application.dto.response.ReservationResponse;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
+import com.carenest.business.reservationservice.presentation.dto.response.ReservationResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
