@@ -1,5 +1,6 @@
 package com.carenest.business.reservationservice.domain.model;
 
+import com.carenest.business.common.model.UserRole;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -147,7 +148,7 @@ public class ReservationHistory {
         this.paymentId = reservation.getPaymentId();
         this.paymentStatus = reservation.getPaymentStatus();
 
-        // TODO: 상태 변경에 따른 설명 설정
+        // 상태 변경에 따른 설명 설정
         setDescriptionBasedOnStatus(reservation.getStatus());
     }
 
@@ -155,9 +156,9 @@ public class ReservationHistory {
         this.prevStatus = prevStatus;
     }
 
-    public void setCreatedBy(String createdBy, String role) {
+    public void setCreatedBy(String createdBy, UserRole role) {
         this.createdBy = createdBy;
-        this.createdByRole = role;
+        this.createdByRole = role.getValue();
     }
 
     private void setDescriptionBasedOnStatus(ReservationStatus status) {
