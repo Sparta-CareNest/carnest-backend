@@ -2,9 +2,9 @@ package com.carenest.business.reservationservice.presentation.controller;
 
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reservationservice.application.dto.request.*;
-import com.carenest.business.reservationservice.application.dto.response.ReservationResponse;
 import com.carenest.business.reservationservice.application.service.ReservationService;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
+import com.carenest.business.reservationservice.presentation.dto.response.ReservationResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
