@@ -4,12 +4,14 @@ import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
+import com.carenest.business.reviewservice.application.dto.response.CaregiverRatingDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
 import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.application.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -57,6 +59,13 @@ public class ReviewController {
     public ResponseDto<List<ReviewSearchResponseDto>> searchReviews(@ModelAttribute ReviewSearchRequestDto requestDto) {
         List<ReviewSearchResponseDto> results = reviewService.searchReviews(requestDto);
         return ResponseDto.success("리뷰 검색 성공", results);
+    }
+
+    // 평균 평점 조회 API
+    @GetMapping("/ratings/{caregiverId}")
+    public ResponseEntity<CaregiverRatingDto> getCaregiverRating(@PathVariable UUID caregiverId) {
+        CaregiverRatingDto rating = reviewService.getCaregiverRating(caregiverId);
+        return ResponseEntity.ok(rating);
     }
 
 }
