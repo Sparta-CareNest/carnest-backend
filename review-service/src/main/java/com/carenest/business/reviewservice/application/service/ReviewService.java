@@ -1,5 +1,6 @@
 package com.carenest.business.reviewservice.application.service;
 
+import com.carenest.business.reviewservice.application.dto.response.CaregiverRatingDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
@@ -82,6 +83,25 @@ public class ReviewService {
         return reviews.stream()
                 .map(ReviewSearchResponseDto::fromEntity)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CaregiverRatingDto getCaregiverRating(UUID caregiverId) {
+        List<Review> reviews = reviewRepository.findAllByCaregiverId(caregiverId);
+
+        if (reviews.isEmpty()) {
+            return new CaregiverRatingDto(caregiverId, 0.0, 0L); // 리뷰 없는 경우 처리
+        }
+
+        double sum = 0.0;
+        for (Review review : reviews) {
+            sum += review.getRating();
+        }
+
+        double average = sum / reviews.size();
+        long reviewCount = reviews.size();
+
+        return new CaregiverRatingDto(caregiverId, average, reviewCount);
     }
 
 }
