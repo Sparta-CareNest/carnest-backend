@@ -10,4 +10,7 @@ public interface ReviewRepository {
     Review save(Review review);
     Optional<Review> findById(UUID reviewId);
     List<Review> findAllByIsDeletedFalse();
+
+    // 간병인 평균 평점 조회
+    List<Review> findAllByCaregiverId(UUID caregiverId);
 }
