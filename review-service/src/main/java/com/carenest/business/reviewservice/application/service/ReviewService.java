@@ -1,16 +1,15 @@
 package com.carenest.business.reviewservice.application.service;
 
+import com.carenest.business.reviewservice.application.dto.response.*;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.domain.model.Review;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCustom;
 import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
+import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +24,15 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ReviewRepositoryCustom reviewRepositoryCustom;
+    private final CaregiverInternalClient caregiverInternalClient;
+
+
 
     @Transactional
     public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
+        // caregiverId 유효성 검사
+        validateCaregiver(requestDto.getCaregiverId());
+
         Review review = Review.builder()
                 .reservationId(requestDto.getReservationId())
                 .caregiverId(requestDto.getCaregiverId())
@@ -39,6 +44,12 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
+    }
+
+    private void validateCaregiver(UUID caregiverId) {
+        if (!Boolean.TRUE.equals(caregiverInternalClient.isExistedCaregiver(caregiverId))) {
+            throw new ReviewException(ErrorCode.INVALID_CAREGIVER);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -81,6 +92,50 @@ public class ReviewService {
 
         return reviews.stream()
                 .map(ReviewSearchResponseDto::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CaregiverRatingDto getCaregiverRating(UUID caregiverId) {
+        List<Review> reviews = reviewRepository.findAllByCaregiverId(caregiverId);
+
+        if (reviews.isEmpty()) {
+            return new CaregiverRatingDto(caregiverId, 0.0, 0L); // 리뷰 없는 경우 처리
+        }
+
+        double sum = 0.0;
+        for (Review review : reviews) {
+            sum += review.getRating();
+        }
+
+        double average = sum / reviews.size();
+        long reviewCount = reviews.size();
+
+        return new CaregiverRatingDto(caregiverId, average, reviewCount);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CaregiverTopRatingDto> getTop10Caregivers() {
+        List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
+
+        return reviews.stream()
+                .collect(Collectors.groupingBy(Review::getCaregiverId))
+                .entrySet().stream()
+                .map(entry -> {
+                    UUID caregiverId = entry.getKey();
+                    List<Review> caregiverReviews = entry.getValue();
+
+                    double average = caregiverReviews.stream()
+                            .mapToDouble(Review::getRating)
+                            .average()
+                            .orElse(0.0);
+
+                    long reviewCount = caregiverReviews.size();
+
+                    return new CaregiverTopRatingDto(caregiverId, average, reviewCount);
+                })
+                .sorted((a, b) -> Double.compare(b.getAverageRating(), a.getAverageRating()))
+                .limit(10)
                 .toList();
     }
 
