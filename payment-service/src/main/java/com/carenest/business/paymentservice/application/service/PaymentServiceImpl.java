@@ -174,19 +174,22 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // TODO: 게이트웨이에 승인 요청을 한 후 결과를 받도록 구현하기
-            // PaymentCompleteRequest actualResult = paymentGatewayService.approvePayment(
-            //     payment.getPaymentKey(), payment.getAmount());
+            // 게이트웨이에 승인 요청하고 결과 받기
+            PaymentCompleteRequest actualResult = paymentGatewayService.approvePayment(
+                    payment.getPaymentKey(), payment.getAmount());
 
             payment.completePayment(
-                    request.getApprovalNumber(),
-                    request.getPgTransactionId(),
-                    request.getReceiptUrl(),
-                    request.getPaymentKey()
+                    actualResult.getApprovalNumber(),
+                    actualResult.getPgTransactionId(),
+                    actualResult.getReceiptUrl(),
+                    actualResult.getPaymentKey()
             );
 
             Payment savedPayment = paymentRepository.save(payment);
             paymentDomainService.createPaymentHistory(savedPayment);
+
+            // TODO: 결제 완료 알림 전송 코드는 나중에 Kafka로 전환하기
+            // 비동기 알림 처리를 위해 레지던시 패턴 도입
 
             log.info("결제 완료 처리 성공: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);
