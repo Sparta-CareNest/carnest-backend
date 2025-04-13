@@ -9,6 +9,7 @@ import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCustom;
 import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
+import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +24,15 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ReviewRepositoryCustom reviewRepositoryCustom;
+    private final CaregiverInternalClient caregiverInternalClient;
+
+
 
     @Transactional
     public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
+        // caregiverId 유효성 검사
+        validateCaregiver(requestDto.getCaregiverId());
+
         Review review = Review.builder()
                 .reservationId(requestDto.getReservationId())
                 .caregiverId(requestDto.getCaregiverId())
@@ -37,6 +44,12 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
+    }
+
+    private void validateCaregiver(UUID caregiverId) {
+        if (!Boolean.TRUE.equals(caregiverInternalClient.isExistedCaregiver(caregiverId))) {
+            throw new ReviewException(ErrorCode.INVALID_CAREGIVER);
+        }
     }
 
     @Transactional(readOnly = true)
