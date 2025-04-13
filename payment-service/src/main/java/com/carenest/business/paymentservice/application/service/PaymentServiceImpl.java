@@ -15,6 +15,7 @@ import com.carenest.business.paymentservice.exception.*;
 import com.carenest.business.paymentservice.infrastructure.external.PaymentGatewayService;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentHistoryRepository;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentRepository;
+import com.carenest.business.paymentservice.infrastructure.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +37,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentHistoryRepository paymentHistoryRepository;
     private final PaymentDomainService paymentDomainService;
     private final PaymentGatewayService paymentGatewayService;
+    private final NotificationService notificationService;
 
     @Override
     @Transactional
@@ -174,7 +176,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // 게이트웨이에 승인 요청하고 결과 받기
+            // 실제 게이트웨이에 승인 요청하고 결과 받기
             PaymentCompleteRequest actualResult = paymentGatewayService.approvePayment(
                     payment.getPaymentKey(), payment.getAmount());
 
@@ -188,8 +190,8 @@ public class PaymentServiceImpl implements PaymentService {
             Payment savedPayment = paymentRepository.save(payment);
             paymentDomainService.createPaymentHistory(savedPayment);
 
-            // TODO: 결제 완료 알림 전송 코드는 나중에 Kafka로 전환하기
-            // 비동기 알림 처리를 위해 레지던시 패턴 도입
+            // 결제 완료 알림 발송
+            notificationService.sendPaymentSuccessNotification(savedPayment);
 
             log.info("결제 완료 처리 성공: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);
@@ -234,6 +236,9 @@ public class PaymentServiceImpl implements PaymentService {
             Payment savedPayment = paymentRepository.save(payment);
             paymentDomainService.createPaymentHistory(savedPayment);
 
+            // 결제 취소 알림 발송
+            notificationService.sendPaymentCancelNotification(savedPayment);
+
             log.info("결제 취소 완료: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);
         } catch (Exception e) {
@@ -262,7 +267,6 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // TODO: 게이트웨이 연동 시 실제 환불 요청
             if (payment.getPaymentKey() != null) {
                 boolean refundResult = paymentGatewayService.refundPayment(
                         payment.getPaymentKey(), request);
@@ -282,6 +286,9 @@ public class PaymentServiceImpl implements PaymentService {
 
             Payment savedPayment = paymentRepository.save(payment);
             paymentDomainService.createPaymentHistory(savedPayment);
+
+            // 결제 환불 알림 발송
+            notificationService.sendPaymentRefundNotification(savedPayment);
 
             log.info("결제 환불 완료: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);
