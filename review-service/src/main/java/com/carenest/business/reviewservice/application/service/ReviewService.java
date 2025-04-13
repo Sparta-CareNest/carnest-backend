@@ -1,12 +1,9 @@
 package com.carenest.business.reviewservice.application.service;
 
-import com.carenest.business.reviewservice.application.dto.response.CaregiverRatingDto;
+import com.carenest.business.reviewservice.application.dto.response.*;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.domain.model.Review;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCustom;
@@ -102,6 +99,31 @@ public class ReviewService {
         long reviewCount = reviews.size();
 
         return new CaregiverRatingDto(caregiverId, average, reviewCount);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CaregiverTopRatingDto> getTop10Caregivers() {
+        List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
+
+        return reviews.stream()
+                .collect(Collectors.groupingBy(Review::getCaregiverId))
+                .entrySet().stream()
+                .map(entry -> {
+                    UUID caregiverId = entry.getKey();
+                    List<Review> caregiverReviews = entry.getValue();
+
+                    double average = caregiverReviews.stream()
+                            .mapToDouble(Review::getRating)
+                            .average()
+                            .orElse(0.0);
+
+                    long reviewCount = caregiverReviews.size();
+
+                    return new CaregiverTopRatingDto(caregiverId, average, reviewCount);
+                })
+                .sorted((a, b) -> Double.compare(b.getAverageRating(), a.getAverageRating()))
+                .limit(10)
+                .toList();
     }
 
 }
