@@ -4,10 +4,7 @@ import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
-import com.carenest.business.reviewservice.application.dto.response.CaregiverRatingDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
-import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.*;
 import com.carenest.business.reviewservice.application.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -67,5 +64,12 @@ public class ReviewController {
         CaregiverRatingDto rating = reviewService.getCaregiverRating(caregiverId);
         return ResponseEntity.ok(rating);
     }
+
+    // 인기 간병인 조회
+    @GetMapping("/ratings/top")
+    public ResponseEntity<List<CaregiverTopRatingDto>> getTop10Caregivers() {
+        return ResponseEntity.ok(reviewService.getTop10Caregivers());
+    }
+
 
 }
