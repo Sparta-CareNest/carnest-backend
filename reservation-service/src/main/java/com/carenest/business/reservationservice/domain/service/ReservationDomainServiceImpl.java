@@ -11,7 +11,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -20,6 +22,20 @@ public class ReservationDomainServiceImpl implements ReservationDomainService {
 
     private final ReservationRepository reservationRepository;
     private final ReservationHistoryRepository reservationHistoryRepository;
+
+    // 취소 가능한 예약 상태 집합
+    private static final Set<ReservationStatus> CANCELABLE_STATUSES = EnumSet.of(
+            ReservationStatus.PENDING_PAYMENT,
+            ReservationStatus.PENDING_ACCEPTANCE,
+            ReservationStatus.CONFIRMED
+    );
+
+    // 활성화된 예약 상태 집합
+    private static final Set<ReservationStatus> ACTIVE_STATUSES = EnumSet.of(
+            ReservationStatus.PENDING_PAYMENT,
+            ReservationStatus.PENDING_ACCEPTANCE,
+            ReservationStatus.CONFIRMED
+    );
 
     @Override
     public void createReservationHistory(Reservation reservation) {
@@ -56,7 +72,6 @@ public class ReservationDomainServiceImpl implements ReservationDomainService {
                 break;
         }
 
-        // UserRole enum을 직접 전달
         history.setCreatedBy(createdBy, role);
         reservationHistoryRepository.save(history);
     }
@@ -101,10 +116,8 @@ public class ReservationDomainServiceImpl implements ReservationDomainService {
         Reservation reservation = reservationOpt.get();
         ReservationStatus status = reservation.getStatus();
 
-        // 결제 대기, 수락 대기, 확정 상태일 때만 취소 가능
-        if (status != ReservationStatus.PENDING_PAYMENT &&
-                status != ReservationStatus.PENDING_ACCEPTANCE &&
-                status != ReservationStatus.CONFIRMED) {
+        // 취소 가능한 상태인지 확인
+        if (!CANCELABLE_STATUSES.contains(status)) {
             return false;
         }
 
@@ -152,9 +165,8 @@ public class ReservationDomainServiceImpl implements ReservationDomainService {
         return reservationRepository.findByCaregiverId(caregiverId)
                 .stream()
                 .anyMatch(reservation -> {
-                    // 이미 취소, 거절된 예약 제외
-                    if (reservation.getStatus() == ReservationStatus.CANCELLED ||
-                            reservation.getStatus() == ReservationStatus.REJECTED) {
+                    // 활성화된 예약 상태인 경우에 겹치는지 확인
+                    if (!ACTIVE_STATUSES.contains(reservation.getStatus())) {
                         return false;
                     }
 
