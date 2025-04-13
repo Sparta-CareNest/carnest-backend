@@ -202,4 +202,9 @@ public class CaregiverServiceImpl implements CaregiverService {
 		caregiverDomainService.caregiverApprovalStatusCheck(caregiver,approvalStatusCheck);
 	}
 
+	@Override
+	public Boolean existsById(UUID id) {
+		return caregiverRepository.existsById(id);
+	}
+
 }
