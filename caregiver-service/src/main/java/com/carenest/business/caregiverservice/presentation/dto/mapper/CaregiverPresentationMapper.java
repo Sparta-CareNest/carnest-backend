@@ -31,7 +31,13 @@ public interface CaregiverPresentationMapper {
 
 	CaregiverSearchResponseDTO toSearchResponseDto(CaregiverSearchResponseServiceDTO dto);
 
+	// Page 처리를 위해
 	default Page<CaregiverSearchResponseDTO> toSearchResponseDto(Page<CaregiverSearchResponseServiceDTO> serviceDTOs) {
 		return serviceDTOs.map(this::toSearchResponseDto);
+	}
+
+	// Page 처리를 위해
+	default Page<CaregiverReadResponseDTO> toReadAllResponseDto(Page<CaregiverReadResponseServiceDTO> responseDTO) {
+		return responseDTO.map(this::toReadResponseDto);
 	}
 }

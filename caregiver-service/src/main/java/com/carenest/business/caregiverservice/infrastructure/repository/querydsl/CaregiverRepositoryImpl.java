@@ -74,4 +74,28 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 
 		return Optional.ofNullable(result);
 	}
+
+	@Override
+	public Page<Caregiver> findAllCaregivers(Pageable pageable) {
+		JPAQuery careQuery = jpaQueryFactory
+			.selectFrom(caregiver)
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
+			.offset(pageable.getOffset())
+			.limit(pageable.getPageSize());
+
+		for(Sort.Order o : pageable.getSort()){
+			PathBuilder pathBuilder = new PathBuilder(caregiver.getType(), caregiver.getMetadata());
+			careQuery.orderBy(new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC, pathBuilder.get(o.getProperty())));
+		}
+
+		List<Caregiver> caregivers = careQuery.fetch();
+		JPAQuery<Long> caregiverCountQuery = jpaQueryFactory
+			.select(caregiver.count())
+			.from(caregiver)
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService)
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation);
+
+		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());
+	}
 }

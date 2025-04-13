@@ -12,4 +12,6 @@ public interface CaregiverCustomRepository {
 	Page<Caregiver> searchByConditions(String location, String service, Pageable pageable);
 
 	Optional<Caregiver> findCaregiverWithCategories(UUID caregiverId);
+
+	Page<Caregiver> findAllCaregivers(Pageable pageable);
 }

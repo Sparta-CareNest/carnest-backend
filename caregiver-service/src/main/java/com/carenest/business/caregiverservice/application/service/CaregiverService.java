@@ -30,4 +30,6 @@ public interface CaregiverService {
 	void updateCaregiverStatus(UUID id, boolean approvalStatusCheck);
 
 	Boolean existsById(UUID id);
+
+	Page<CaregiverReadResponseServiceDTO> getCaregiverAll(Pageable pageable);
 }
