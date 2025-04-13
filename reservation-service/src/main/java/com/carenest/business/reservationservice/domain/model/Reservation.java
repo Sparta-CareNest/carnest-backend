@@ -21,8 +21,14 @@ public class Reservation {
     @Column(name = "guardian_id", nullable = false)
     private UUID guardianId;
 
+    @Column(name = "guardian_name", length = 50)
+    private String guardianName;
+
     @Column(name = "caregiver_id", nullable = false)
     private UUID caregiverId;
+
+    @Column(name = "caregiver_name", length = 50)
+    private String caregiverName;
 
     @Column(name = "patient_name", length = 50, nullable = false)
     private String patientName;
@@ -56,6 +62,9 @@ public class Reservation {
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
+    @Column(name = "service_fee", precision = 10, scale = 2)
+    private BigDecimal serviceFee;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)
     private ReservationStatus status;
@@ -66,11 +75,17 @@ public class Reservation {
     @Column(name = "rejected_at")
     private LocalDateTime rejectedAt;
 
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @Column(name = "cancel_reason", length = 255)
     private String cancelReason;
 
     @Column(name = "rejection_reason", length = 255)
     private String rejectionReason;
+
+    @Column(name = "caregiver_note", length = 255)
+    private String caregiverNote;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -81,13 +96,20 @@ public class Reservation {
     @Column(name = "payment_id")
     private UUID paymentId;
 
-    public Reservation(UUID guardianId, UUID caregiverId, String patientName, Integer patientAge,
-                       Gender patientGender, String patientCondition, String careAddress,
-                       LocalDateTime startedAt, LocalDateTime endedAt, ServiceType serviceType,
-                       String serviceRequests, BigDecimal totalAmount, UUID paymentId) {
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 20)
+    private PaymentStatus paymentStatus;
+
+    public Reservation(UUID guardianId, String guardianName, UUID caregiverId, String caregiverName,
+                       String patientName, Integer patientAge, Gender patientGender,
+                       String patientCondition, String careAddress, LocalDateTime startedAt,
+                       LocalDateTime endedAt, ServiceType serviceType, String serviceRequests,
+                       BigDecimal totalAmount, BigDecimal serviceFee) {
         this.reservationId = UUID.randomUUID();
         this.guardianId = guardianId;
+        this.guardianName = guardianName;
         this.caregiverId = caregiverId;
+        this.caregiverName = caregiverName;
         this.patientName = patientName;
         this.patientAge = patientAge;
         this.patientGender = patientGender;
@@ -98,13 +120,16 @@ public class Reservation {
         this.serviceType = serviceType;
         this.serviceRequests = serviceRequests;
         this.totalAmount = totalAmount;
+        this.serviceFee = serviceFee;
         this.status = ReservationStatus.PENDING_PAYMENT;
+        this.paymentStatus = PaymentStatus.PENDING;
         this.createdAt = LocalDateTime.now();
         this.paymentId = null;
     }
 
     public void linkPayment(UUID paymentId) {
         this.paymentId = paymentId;
+        this.paymentStatus = PaymentStatus.PAID;
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -112,8 +137,9 @@ public class Reservation {
         return this.status == ReservationStatus.PENDING_ACCEPTANCE;
     }
 
-    public void acceptByCaregiver() {
+    public void acceptByCaregiver(String caregiverNote) {
         this.status = ReservationStatus.CONFIRMED;
+        this.caregiverNote = caregiverNote;
         this.acceptedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
@@ -133,6 +159,7 @@ public class Reservation {
 
     public void completeService() {
         this.status = ReservationStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
@@ -163,6 +190,10 @@ public class Reservation {
 
     public void updateServiceRequests(String serviceRequests) {
         this.serviceRequests = serviceRequests;
+    }
+
+    public void updateServiceFee(BigDecimal serviceFee) {
+        this.serviceFee = serviceFee;
     }
 
     public void setUpdatedAt(LocalDateTime updatedAt) {

@@ -3,12 +3,14 @@ package com.carenest.business.reservationservice.application.service;
 import com.carenest.business.reservationservice.application.dto.request.ReservationCreateRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationSearchRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationUpdateRequest;
-import com.carenest.business.reservationservice.application.dto.response.ReservationResponse;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
+import com.carenest.business.reservationservice.domain.model.PaymentStatus;
 import com.carenest.business.reservationservice.domain.repository.ReservationRepository;
 import com.carenest.business.reservationservice.domain.service.ReservationDomainService;
 import com.carenest.business.reservationservice.exception.*;
+import com.carenest.business.reservationservice.presentation.dto.mapper.ReservationMapper;
+import com.carenest.business.reservationservice.presentation.dto.response.ReservationResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,13 +26,16 @@ public class ReservationServiceImpl implements ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final ReservationDomainService reservationDomainService;
+    private final ReservationMapper reservationMapper;
 
     @Override
     @Transactional
     public ReservationResponse createReservation(ReservationCreateRequest request) {
         Reservation reservation = new Reservation(
                 request.getGuardianId(),
+                request.getGuardianName(),
                 request.getCaregiverId(),
+                request.getCaregiverName(),
                 request.getPatientName(),
                 request.getPatientAge(),
                 request.getPatientGender(),
@@ -41,7 +46,7 @@ public class ReservationServiceImpl implements ReservationService {
                 request.getServiceType(),
                 request.getServiceRequests(),
                 request.getTotalAmount(),
-                null
+                request.getServiceFee()
         );
 
         if (!reservationDomainService.validateReservationTime(reservation)) {
@@ -52,7 +57,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         reservationDomainService.createReservationHistory(savedReservation);
 
-        return new ReservationResponse(savedReservation);
+        return reservationMapper.toDto(savedReservation);
     }
 
     @Override
@@ -61,7 +66,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(ReservationNotFoundException::new);
 
-        return new ReservationResponse(reservation);
+        return reservationMapper.toDto(reservation);
     }
 
     @Override
@@ -75,7 +80,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         Page<Reservation> reservations = reservationRepository.findByStartedAtBetween(startDate, endDate, pageable);
-        return reservations.map(ReservationResponse::new);
+        return reservations.map(reservationMapper::toDto);
     }
 
     @Override
@@ -90,7 +95,7 @@ public class ReservationServiceImpl implements ReservationService {
                 request.getStatus(),
                 pageable
         );
-        return reservations.map(ReservationResponse::new);
+        return reservations.map(reservationMapper::toDto);
     }
 
     @Override
@@ -109,14 +114,14 @@ public class ReservationServiceImpl implements ReservationService {
                 userId, startDate, endDate, pageable);
 
         if (!reservationsByGuardian.isEmpty()) {
-            return reservationsByGuardian.map(ReservationResponse::new);
+            return reservationsByGuardian.map(reservationMapper::toDto);
         }
 
         // 간병인 ID로 조회
         Page<Reservation> reservationsByCaregiver = reservationRepository.findByCaregiverIdAndStartedAtBetween(
                 userId, startDate, endDate, pageable);
 
-        return reservationsByCaregiver.map(ReservationResponse::new);
+        return reservationsByCaregiver.map(reservationMapper::toDto);
     }
 
     @Override
@@ -151,7 +156,7 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation updatedReservation = reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(updatedReservation);
 
-        return new ReservationResponse(updatedReservation);
+        return reservationMapper.toDto(updatedReservation);
     }
 
     @Override
@@ -164,12 +169,12 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidReservationStatusException();
         }
 
-        reservation.acceptByCaregiver();
+        reservation.acceptByCaregiver(caregiverNote);
         reservationRepository.save(reservation);
 
         reservationDomainService.createReservationHistory(reservation);
 
-        return new ReservationResponse(reservation);
+        return reservationMapper.toDto(reservation);
     }
 
     @Override
@@ -187,7 +192,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         reservationDomainService.createReservationHistory(reservation);
 
-        return new ReservationResponse(reservation);
+        return reservationMapper.toDto(reservation);
     }
 
     @Override
@@ -201,11 +206,17 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         reservation.cancelByGuardian(cancelReason);
+
+        // 결제 상태 업데이트
+        if (reservation.getPaymentStatus() == PaymentStatus.PAID) {
+            // TODO: 환불 처리 로직 추가하기
+        }
+
         reservationRepository.save(reservation);
 
         reservationDomainService.createReservationHistory(reservation);
 
-        return new ReservationResponse(reservation);
+        return reservationMapper.toDto(reservation);
     }
 
     @Override
@@ -219,7 +230,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         Page<Reservation> reservations = reservationRepository.findByStartedAtBetween(startDate, endDate, pageable);
-        return reservations.map(ReservationResponse::new);
+        return reservations.map(reservationMapper::toDto);
     }
 
     @Override
@@ -237,21 +248,21 @@ public class ReservationServiceImpl implements ReservationService {
                 userId, startDate, endDate, pageable);
 
         if (!reservationsByGuardian.isEmpty()) {
-            return reservationsByGuardian.map(ReservationResponse::new);
+            return reservationsByGuardian.map(reservationMapper::toDto);
         }
 
         // 간병인 ID로 조회
         Page<Reservation> reservationsByCaregiver = reservationRepository.findByCaregiverIdAndStartedAtBetween(
                 userId, startDate, endDate, pageable);
 
-        return reservationsByCaregiver.map(ReservationResponse::new);
+        return reservationsByCaregiver.map(reservationMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<ReservationResponse> getReservationsByStatus(ReservationStatus status, Pageable pageable) {
         Page<Reservation> reservations = reservationRepository.findByStatus(status, pageable);
-        return reservations.map(ReservationResponse::new);
+        return reservations.map(reservationMapper::toDto);
     }
 
     @Override
@@ -269,7 +280,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         reservationDomainService.createReservationHistory(reservation);
 
-        return new ReservationResponse(reservation);
+        return reservationMapper.toDto(reservation);
     }
 
     @Override
@@ -288,6 +299,6 @@ public class ReservationServiceImpl implements ReservationService {
         Reservation updatedReservation = reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(updatedReservation);
 
-        return new ReservationResponse(updatedReservation);
+        return reservationMapper.toDto(updatedReservation);
     }
 }
