@@ -149,9 +149,10 @@ public class CaregiverServiceImpl implements CaregiverService {
 
 	@Override
 	@Transactional
-	public CaregiverUpdateResponseServiceDTO updateCaregiver(UUID caregiverId, CaregiverUpdateRequestDTO dto) {
-		Caregiver caregiver = caregiverRepository.findById(caregiverId)
-			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
+	public CaregiverUpdateResponseServiceDTO updateCaregiver(UUID userId, CaregiverUpdateRequestDTO dto) {
+		Caregiver caregiver = caregiverRepository.findByUserId((userId)).orElseThrow(
+			() -> new CaregiverException(ErrorCode.NOT_FOUND)
+		);
 
 		// 필드 수정
 		if (dto.description() != null)

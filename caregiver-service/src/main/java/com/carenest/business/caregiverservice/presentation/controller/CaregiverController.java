@@ -83,12 +83,12 @@ public class CaregiverController {
 	}
 
 	// Update
-	@PatchMapping("/{caregiverId}")
+	@PatchMapping()
 	public ResponseDto<CaregiverUpdateResponseDTO> updateCaregiver(
-		@PathVariable UUID caregiverId,
-		@RequestBody CaregiverUpdateRequestDTO requestDTO
+		@RequestBody CaregiverUpdateRequestDTO requestDTO,
+		@AuthUser AuthUserInfo authUserInfo
 	){
-		CaregiverUpdateResponseServiceDTO responseDTO = caregiverService.updateCaregiver(caregiverId,requestDTO);
+		CaregiverUpdateResponseServiceDTO responseDTO = caregiverService.updateCaregiver(authUserInfo.getUserId(),requestDTO);
 		return ResponseDto.success("간병인 정보가 수정되었습니다.",presentationMapper.toUpdateResponseDto(responseDTO));
 	}
 

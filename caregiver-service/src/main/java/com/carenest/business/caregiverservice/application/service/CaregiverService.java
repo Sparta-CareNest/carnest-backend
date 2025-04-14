@@ -22,7 +22,7 @@ public interface CaregiverService {
 
 	CaregiverReadResponseServiceDTO getCaregiver(UUID userId);
 
-	CaregiverUpdateResponseServiceDTO updateCaregiver(UUID caregiverId, CaregiverUpdateRequestDTO dto);
+	CaregiverUpdateResponseServiceDTO updateCaregiver(UUID userId, CaregiverUpdateRequestDTO dto);
 
 	void deleteCaregiver(UUID caregiverId);
 

@@ -1,5 +1,6 @@
 package com.carenest.business.caregiverservice.infrastructure.repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,4 +11,6 @@ import com.carenest.business.caregiverservice.infrastructure.repository.querydsl
 public interface CaregiverRepository extends JpaRepository<Caregiver, UUID>, CaregiverCustomRepository {
 
 	boolean existsByUserId(UUID uuid);
+
+	Optional<Caregiver> findByUserId(UUID userId);
 }
