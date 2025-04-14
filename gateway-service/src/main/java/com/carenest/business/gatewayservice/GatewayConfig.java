@@ -20,6 +20,15 @@ public class GatewayConfig {
                 .route("user-service", r -> r.path("/api/v1/users/**")
                         .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://user-service"))
+                .route("payment-service", r -> r.path("/api/v1/payments/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://payment-service"))
+                .route("reservation-service", r -> r.path("/api/v1/reservations/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://reservation-service"))
+                .route("notification-service", r -> r.path("/api/v1/notifications/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://notification-service"))
                 .build();
     }
 }

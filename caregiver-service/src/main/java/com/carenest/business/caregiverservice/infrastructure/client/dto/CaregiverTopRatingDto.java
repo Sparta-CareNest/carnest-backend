@@ -1,4 +1,4 @@
-package com.carenest.business.reviewservice.application.dto.response;
+package com.carenest.business.caregiverservice.infrastructure.client.dto;
 
 import java.util.UUID;
 
@@ -11,9 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CaregiverTopRatingDto {
 
-    private UUID caregiverId;
-    private Double averageRating;
-    private Long reviewCount;
+	private UUID caregiverId;
+	private Double averageRating;
+	private Long reviewCount;
 
 }
-

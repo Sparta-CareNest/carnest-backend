@@ -16,9 +16,8 @@ public enum ErrorCode {
 	NOT_FOUND_SERVICES("CS-001", "해당 서비스를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 	NOT_FOUND_LOCATION("CL-001", "해당 지역을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
 
-	UPLOAD_IMAGE_FAILED("C-004", "이미지 파일 업로드에 실패하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR)
-
-	;
+	UPLOAD_IMAGE_FAILED("C-004", "이미지 파일 업로드에 실패하였습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+	EXTERNAL_API_ERROR("E-001","서비스 호출에 실패 했습니다." ,HttpStatus.INTERNAL_SERVER_ERROR);
 
 	private final String errorCode;
 	private final String message;
