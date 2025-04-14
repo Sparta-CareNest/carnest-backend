@@ -2,20 +2,20 @@ package com.carenest.business.notificationservice.application.service;
 
 import com.carenest.business.notificationservice.application.dto.request.NotificationCreateRequestDto;
 import com.carenest.business.notificationservice.application.dto.response.NotificationResponseDto;
-import com.carenest.business.notificationservice.application.dto.response.UserInfoResponseDto;
 import com.carenest.business.notificationservice.domain.model.Notification;
 import com.carenest.business.notificationservice.domain.model.NotificationType;
 import com.carenest.business.notificationservice.domain.repository.NotificationRepository;
 import com.carenest.business.notificationservice.infrastructure.client.UserClient;
 import com.carenest.business.notificationservice.infrastructure.config.NotificationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService{
@@ -29,35 +29,33 @@ public class NotificationServiceImpl implements NotificationService{
             NotificationCreateRequestDto requestDto,
             NotificationType notificationType
     ) {
-        // 유저 존재 여부 확인
-        boolean isValidUser = userClient.validateUser(requestDto.getReceiverId());
+        // 사용자 존재 여부 확인
+        Boolean isValidUser = userClient.validateUser(requestDto.getReceiverId());
         if (!isValidUser) {
             throw new IllegalArgumentException("존재하지 않는 유저에게 알림을 보낼 수 없습니다.");
         }
 
-        // 유저 닉네임 가져오기
-        UserInfoResponseDto userInfo = userClient.getUserInfo(requestDto.getReceiverId());
-        String nickname = userInfo.getNickname();
+        String content = "[" + requestDto.getReceiverId() + "] " + notificationType.getMessage();
 
-        // 알림 내용에 닉네임 포하
-        String content = "[" + nickname + "] " + notificationType.getMessage();
-
+        // 알림 객체 생성
         Notification notification = Notification.create(
                 requestDto.getReceiverId(),
                 notificationType,
                 content
         );
 
+        // 알림 저장
         Notification saved = notificationRepository.save(notification);
 
         try {
-            // JSON 문자열로 전송하거나 간단한 텍스트로 전송해도 됨
+            // WebSocket 알림 전송
             String message = "[알림] " + saved.getContent();
             webSocketHandler.sendNotification(saved.getReceiverId(), message);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("WebSocket 알림 전송 실패: {}", e.getMessage());
         }
 
+        // 알림 응답 반환
         return new NotificationResponseDto(
                 saved.getId(),
                 saved.getType(),

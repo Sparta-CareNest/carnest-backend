@@ -1,6 +1,5 @@
 package com.carenest.business.notificationservice.infrastructure.client;
 
-import com.carenest.business.notificationservice.application.dto.response.UserInfoResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
