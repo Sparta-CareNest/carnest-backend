@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
 @EnableJpaAuditing
-@EnableFeignClients
+@EnableFeignClients(basePackages = "com.carenest.business.notificationservice.infrastructure.client")
 public class NotificationServiceApplication {
 
 	public static void main(String[] args) {
