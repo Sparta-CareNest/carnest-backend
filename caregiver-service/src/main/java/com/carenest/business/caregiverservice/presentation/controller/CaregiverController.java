@@ -20,10 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.service.CaregiverService;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverGetTop10ResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
@@ -100,6 +102,13 @@ public class CaregiverController {
 		Page<CaregiverSearchResponseServiceDTO> responseServiceDTO =  caregiverService.searchCaregiver(location,service,pageable);
 
 		return ResponseDto.success("간병인 검색을 완료했습니다.", presentationMapper.toSearchResponseDto(responseServiceDTO));
+	}
+
+	@GetMapping("/rating/top")
+	public ResponseDto<List<CaregiverGetTop10ResponseDTO>> getTop10Caregiver()
+	{
+		List<CaregiverGetTop10ResponseServiceDTO> responseServiceDTO = caregiverService.getTop10Caregiver();
+		return ResponseDto.success(presentationMapper.toGetTop10CaregiverDto(responseServiceDTO));
 	}
 
 
