@@ -1,5 +1,7 @@
 package com.carenest.business.userservice.application.service;
 
+import java.util.UUID;
+
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
 import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
@@ -110,7 +112,12 @@ public class UserService {
 
         return UpdateUserResponseDTO.from(updatedUser);
     }
-//
+
+	public Boolean existsById(UUID id) {
+        return userRepository.existsById(id);
+	}
+
+	//
 //    // 회원 탈퇴
 //    @Transactional
 //    public WithdrawalResponseDTO deleteMyAccount() {
