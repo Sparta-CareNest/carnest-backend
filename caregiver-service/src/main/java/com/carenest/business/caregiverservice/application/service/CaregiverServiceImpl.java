@@ -202,4 +202,35 @@ public class CaregiverServiceImpl implements CaregiverService {
 		caregiverDomainService.caregiverApprovalStatusCheck(caregiver,approvalStatusCheck);
 	}
 
+	@Override
+	public Boolean existsById(UUID id) {
+		return caregiverRepository.existsById(id);
+	}
+
+	@Override
+	public Page<CaregiverReadResponseServiceDTO> getCaregiverAll(Pageable pageable) {
+
+		Page<Caregiver> caregivers = caregiverRepository.findAllCaregivers(pageable);
+
+		return caregivers.map(caregiver -> new CaregiverReadResponseServiceDTO(
+			caregiver.getId(),
+			caregiver.getUserId(),
+			caregiver.getDescription(),
+			caregiver.getRating(),
+			caregiver.getExperienceYears(),
+			caregiver.getPricePerHour(),
+			caregiver.getPricePerDay(),
+			caregiver.getApprovalStatus(),
+			caregiver.getGender(),
+			caregiver.getCaregiverCategoryServices()
+				.stream()
+				.map(cs -> cs.getCategoryService().getName())
+				.toList(),
+			caregiver.getCaregiverCategoryLocations()
+				.stream()
+				.map(cl -> cl.getCategoryLocation().getName())
+				.toList()
+		));
+	}
+
 }
