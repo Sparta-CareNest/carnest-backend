@@ -15,7 +15,7 @@ import com.carenest.business.userservice.domain.model.UserRoleEnum;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class User extends BaseEntity {
 
     @Id
@@ -35,13 +35,13 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String email;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserRoleEnum role;
-
     @Column(nullable = false)
     private String name;
 
     @Column(name = "phone_number", nullable = false, length = 20)
     private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRoleEnum role;
 }

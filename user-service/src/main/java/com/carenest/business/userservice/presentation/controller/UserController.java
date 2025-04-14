@@ -6,6 +6,8 @@ import com.carenest.business.userservice.application.dto.request.SignupRequestDT
 import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
 import com.carenest.business.userservice.application.service.UserService;
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,31 +40,26 @@ public class UserController {
 //        return ResponseDto.success("로그아웃이 완료되었습니다.", null);
 //    }
 //
-//    // 내 정보 조회
-//    @GetMapping("/me")
-//    public ResponseDto<UserInfoResponseDTO> getMyInfo() {
-//        UserInfoResponseDTO response = userService.getMyInfo();
-//        return ResponseDto.success(response);
-//    }
-//
-//    // 내 정보 수정
-//    @PutMapping("/me")
-//    public ResponseDto<UpdateUserResponseDTO> updateMyInfo(@RequestBody UpdateUserRequestDTO request) {
-//        UpdateUserResponseDTO response = userService.updateMyInfo(request);
-//        return ResponseDto.success("정보가 수정되었습니다.", response);
-//    }
-//
+    // 내 정보 조회
+    @GetMapping("/me")
+    public ResponseDto<UserInfoResponseDTO> getMyInfo(@AuthUser AuthUserInfo authUserInfo) {
+        UserInfoResponseDTO response = userService.getMyInfo(authUserInfo);
+        return ResponseDto.success("내 정보 조회가 완료되었습니다.",response);
+    }
+
+    // 내 정보 수정
+    @PatchMapping("/me")
+    public ResponseDto<UpdateUserResponseDTO> updateMyInfo(@AuthUser AuthUserInfo authUserInfo,
+                                                            @RequestBody UpdateUserRequestDTO updateUserRequestDTO) {
+
+        UpdateUserResponseDTO response = userService.updateMyInfo(authUserInfo, updateUserRequestDTO);
+        return ResponseDto.success("정보가 수정되었습니다.", response);
+    }
+
 //    // 회원 탈퇴
 //    @DeleteMapping("/me")
 //    public ResponseDto<WithdrawalResponseDTO> deleteMyAccount() {
 //        WithdrawalResponseDTO response = userService.deleteMyAccount();
 //        return ResponseDto.success("탈퇴가 완료되었습니다.", response);
-//    }
-//
-//    // 간병인 프로필 조회 (보호자용)
-//    @GetMapping("/caregivers/profile")
-//    public ResponseDto<CaregiverProfileResponseDTO> getCaregiverProfile() {
-//        CaregiverProfileResponseDTO response = userService.getCaregiverProfile();
-//        return ResponseDto.success(response);
 //    }
 }
