@@ -1,15 +1,19 @@
 package com.carenest.business.caregiverservice.presentation.dto.mapper;
 
+import java.util.List;
+
 import org.mapstruct.Mapper;
 import org.springframework.data.domain.Page;
 
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverCreateResponseDTO;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverGetTop10ResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverSearchResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverUpdateResponseDTO;
@@ -40,4 +44,6 @@ public interface CaregiverPresentationMapper {
 	default Page<CaregiverReadResponseDTO> toReadAllResponseDto(Page<CaregiverReadResponseServiceDTO> responseDTO) {
 		return responseDTO.map(this::toReadResponseDto);
 	}
+
+	List<CaregiverGetTop10ResponseDTO> toGetTop10CaregiverDto(List<CaregiverGetTop10ResponseServiceDTO> responseServiceDTO);
 }

@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.carenest.business.caregiverservice.application.dto.mapper.CaregiverApplicationMapper;
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
@@ -24,6 +25,8 @@ import com.carenest.business.caregiverservice.domain.model.category.CategoryServ
 import com.carenest.business.caregiverservice.domain.service.CaregiverDomainService;
 import com.carenest.business.caregiverservice.exception.CaregiverException;
 import com.carenest.business.caregiverservice.exception.ErrorCode;
+import com.carenest.business.caregiverservice.infrastructure.client.ReviewClient;
+import com.carenest.business.caregiverservice.infrastructure.client.dto.CaregiverTopRatingDto;
 import com.carenest.business.caregiverservice.infrastructure.repository.CaregiverRepository;
 import com.carenest.business.caregiverservice.infrastructure.repository.CategoryLocationRepository;
 import com.carenest.business.caregiverservice.infrastructure.repository.CategoryServiceRepository;
@@ -32,6 +35,7 @@ import com.carenest.business.caregiverservice.infrastructure.s3.AmazonS3Manager;
 import com.carenest.business.caregiverservice.infrastructure.s3.Uuid;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,6 +51,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 	private final CaregiverDomainService caregiverDomainService;
 	private final AmazonS3Manager amazonS3Manager;
 	private final AmazonConfig amazonConfig;
+	private final ReviewClient reviewClient;
 
 
 	@Qualifier("caregiverApplicationMapper")
@@ -231,6 +236,45 @@ public class CaregiverServiceImpl implements CaregiverService {
 				.map(cl -> cl.getCategoryLocation().getName())
 				.toList()
 		));
+	}
+
+	// TODO: 캐싱 도입
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<CaregiverGetTop10ResponseServiceDTO> getTop10Caregiver() {
+
+		try{
+			// 1. Feign Client 호출
+			List<CaregiverTopRatingDto> ratingDtos = reviewClient.getTop10Caregivers().getBody();
+
+			// 2. DTO 가공
+			List<CaregiverGetTop10ResponseServiceDTO> result = ratingDtos.stream()
+				.map(dto -> {
+					UUID caregiverId = dto.getCaregiverId();
+					Caregiver caregiver = caregiverRepository.findById(caregiverId)
+						.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
+
+					return new CaregiverGetTop10ResponseServiceDTO(
+						caregiver.getId(),
+						caregiver.getUserId(),
+						caregiver.getDescription(),
+						dto.getAverageRating(),
+						dto.getReviewCount(),
+						caregiver.getExperienceYears(),
+						caregiver.getPricePerHour(),
+						caregiver.getPricePerDay(),
+						caregiver.getGender()
+
+					);
+				})
+				.toList();
+
+			return result;
+
+		}catch (FeignException e){
+			throw new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
+		}
 	}
 
 }
