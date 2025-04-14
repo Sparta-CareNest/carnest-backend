@@ -9,4 +9,5 @@ import com.carenest.business.caregiverservice.infrastructure.repository.querydsl
 
 public interface CaregiverRepository extends JpaRepository<Caregiver, UUID>, CaregiverCustomRepository {
 
+	boolean existsByUserId(UUID uuid);
 }
