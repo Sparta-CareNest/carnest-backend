@@ -74,9 +74,11 @@ public class CaregiverController {
 	}
 
 	// Read (개인 조회)
-	@GetMapping("/{caregiverId}")
-	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetail(@PathVariable UUID caregiverId){
-		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiver(caregiverId);
+	@GetMapping
+	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetail(
+		@AuthUser AuthUserInfo authUserInfo
+	){
+		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiver(authUserInfo.getUserId());
 		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
 	}
 

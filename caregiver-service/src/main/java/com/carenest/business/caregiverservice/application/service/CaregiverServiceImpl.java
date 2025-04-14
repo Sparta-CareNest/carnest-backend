@@ -125,9 +125,9 @@ public class CaregiverServiceImpl implements CaregiverService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public CaregiverReadResponseServiceDTO getCaregiver(UUID caregiverId) {
+	public CaregiverReadResponseServiceDTO getCaregiver(UUID userId) {
 		// 1. N+1 문제로 fetchJoin 으로 가져옴
-		Caregiver caregiver = caregiverRepository.findCaregiverWithCategories(caregiverId)
+		Caregiver caregiver = caregiverRepository.findCaregiverWithCategories(userId)
 			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
 
 		// 2. DTO 이름으로 변환하기 위해

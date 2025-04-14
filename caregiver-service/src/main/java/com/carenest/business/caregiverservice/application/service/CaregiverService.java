@@ -20,7 +20,7 @@ public interface CaregiverService {
 	CaregiverCreateResponseServiceDTO createCaregiver(CaregiverCreateRequestServiceDTO requestServiceDTO,
 		List<MultipartFile> multipartFiles);
 
-	CaregiverReadResponseServiceDTO getCaregiver(UUID caregiverId);
+	CaregiverReadResponseServiceDTO getCaregiver(UUID userId);
 
 	CaregiverUpdateResponseServiceDTO updateCaregiver(UUID caregiverId, CaregiverUpdateRequestDTO dto);
 
