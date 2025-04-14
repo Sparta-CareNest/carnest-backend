@@ -28,4 +28,8 @@ public interface CaregiverService {
 	Page<CaregiverSearchResponseServiceDTO> searchCaregiver(String location, String service, Pageable pageable);
 
 	void updateCaregiverStatus(UUID id, boolean approvalStatusCheck);
+
+	Boolean existsById(UUID id);
+
+	Page<CaregiverReadResponseServiceDTO> getCaregiverAll(Pageable pageable);
 }

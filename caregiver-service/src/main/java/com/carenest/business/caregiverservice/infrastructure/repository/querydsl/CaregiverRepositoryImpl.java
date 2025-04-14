@@ -3,6 +3,8 @@ package com.carenest.business.caregiverservice.infrastructure.repository.queryds
 import static com.carenest.business.caregiverservice.domain.model.QCaregiver.*;
 import static com.carenest.business.caregiverservice.domain.model.category.QCaregiverCategoryLocation.*;
 import static com.carenest.business.caregiverservice.domain.model.category.QCaregiverCategoryService.*;
+import static com.carenest.business.caregiverservice.domain.model.category.QCategoryLocation.*;
+import static com.carenest.business.caregiverservice.domain.model.category.QCategoryService.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -73,5 +75,29 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.fetchOne();
 
 		return Optional.ofNullable(result);
+	}
+
+	@Override
+	public Page<Caregiver> findAllCaregivers(Pageable pageable) {
+		JPAQuery careQuery = jpaQueryFactory
+			.selectFrom(caregiver).distinct()
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
+			.leftJoin(caregiverCategoryService.categoryService, categoryService).fetchJoin()
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
+			.leftJoin(caregiverCategoryLocation.categoryLocation, categoryLocation).fetchJoin()
+			.offset(pageable.getOffset())
+			.limit(pageable.getPageSize());
+
+		for(Sort.Order o : pageable.getSort()){
+			PathBuilder pathBuilder = new PathBuilder(caregiver.getType(), caregiver.getMetadata());
+			careQuery.orderBy(new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC, pathBuilder.get(o.getProperty())));
+		}
+
+		List<Caregiver> caregivers = careQuery.fetch();
+		JPAQuery<Long> caregiverCountQuery = jpaQueryFactory
+			.select(caregiver.id.countDistinct())
+			.from(caregiver);
+
+		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());
 	}
 }
