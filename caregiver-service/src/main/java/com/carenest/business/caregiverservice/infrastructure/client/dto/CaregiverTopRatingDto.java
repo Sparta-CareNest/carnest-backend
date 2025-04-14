@@ -2,27 +2,17 @@ package com.carenest.business.caregiverservice.infrastructure.client.dto;
 
 import java.util.UUID;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CaregiverTopRatingDto {
 
 	private UUID caregiverId;
-	private double averageRating;
-	private long reviewCount;
+	private Double averageRating;
+	private Long reviewCount;
 
-	public CaregiverTopRatingDto(UUID caregiverId, double averageRating, long reviewCount) {
-		this.caregiverId = caregiverId;
-		this.averageRating = averageRating;
-		this.reviewCount = reviewCount;
-	}
-
-	public UUID getCaregiverId() {
-		return caregiverId;
-	}
-
-	public double getAverageRating() {
-		return averageRating;
-	}
-
-	public long getReviewCount() {
-		return reviewCount;
-	}
 }
