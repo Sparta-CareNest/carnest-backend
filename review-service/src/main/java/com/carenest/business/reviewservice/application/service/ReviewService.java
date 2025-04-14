@@ -27,7 +27,6 @@ public class ReviewService {
     private final CaregiverInternalClient caregiverInternalClient;
 
 
-
     @Transactional
     public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
         // caregiverId 유효성 검사
@@ -53,14 +52,14 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public ReviewCreateResponseDto getReviewById(UUID reviewId){
+    public ReviewCreateResponseDto getReviewById(UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
         return ReviewCreateResponseDto.fromEntity(review);
     }
 
     @Transactional(readOnly = true)
-    public List<ReviewCreateResponseDto> getAllReviews(){
+    public List<ReviewCreateResponseDto> getAllReviews() {
         List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
         return reviews.stream()
                 .map(ReviewCreateResponseDto::fromEntity)
@@ -69,7 +68,7 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto){
+    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
 
@@ -119,7 +118,7 @@ public class ReviewService {
         List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
 
         return reviews.stream()
-                .collect(Collectors.groupingBy(Review::getCaregiverId))
+                .collect(Collectors.groupingBy(Review::getCaregiverId)) // 간병인 ID로 그룹핑
                 .entrySet().stream()
                 .map(entry -> {
                     UUID caregiverId = entry.getKey();
@@ -134,9 +133,14 @@ public class ReviewService {
 
                     return new CaregiverTopRatingDto(caregiverId, average, reviewCount);
                 })
-                .sorted((a, b) -> Double.compare(b.getAverageRating(), a.getAverageRating()))
+                .sorted((a, b) -> {
+                    int result = Double.compare(b.getAverageRating(), a.getAverageRating());
+                    if (result == 0) {
+                        return Long.compare(b.getReviewCount(), a.getReviewCount());
+                    }
+                    return result;
+                })
                 .limit(10)
                 .toList();
     }
-
 }
