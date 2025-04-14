@@ -95,8 +95,15 @@ public class CaregiverController {
 	// Delete
 	@DeleteMapping("/{caregiverId}")
 	public ResponseDto<Void> deleteCaregiver(
-		@PathVariable UUID caregiverId
+		@PathVariable UUID caregiverId,
+		@AuthUser AuthUserInfo authUserInfo
 	){
+		// Admin, Caregiver 권한이 아니면 거부
+		if(!(authUserInfo.getRole().equals(UserRole.CAREGIVER.toString())) &&
+			authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+			throw new BaseException(CommonErrorCode.FORBIDDEN);
+		}
+
 		caregiverService.deleteCaregiver(caregiverId);
 		return ResponseDto.success("간병인 정보가 삭제되었습니다.",null);
 	}
