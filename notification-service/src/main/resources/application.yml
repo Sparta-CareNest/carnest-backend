@@ -9,3 +9,19 @@ spring:
   config:
     import: optional:configserver:http://localhost:8888
 
+
+user-service:
+  url: http://localhost:9010  # 유저 서비스 주소
+
+reservation-service:
+  url: http://localhost:9030  # 예약 서비스 주소
+
+payment-service:
+  url: http://localhost:9040  # 결제 서비스 주소
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
