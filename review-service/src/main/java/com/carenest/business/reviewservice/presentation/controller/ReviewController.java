@@ -1,5 +1,7 @@
 package com.carenest.business.reviewservice.presentation.controller;
 
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
@@ -22,8 +24,10 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping
-    public ResponseDto<ReviewCreateResponseDto> createReview(@RequestBody @Valid ReviewCreateRequestDto requestDto){
-        ReviewCreateResponseDto responseDto = reviewService.createReview(requestDto);
+    public ResponseDto<ReviewCreateResponseDto> createReview(
+            @AuthUser AuthUserInfo authUserInfo,
+            @RequestBody @Valid ReviewCreateRequestDto requestDto){
+        ReviewCreateResponseDto responseDto = reviewService.createReview(authUserInfo.getUserId(), requestDto);
         return ResponseDto.success("리뷰 등록 성공",responseDto);
     }
 
@@ -40,15 +44,19 @@ public class ReviewController {
     }
 
     @PatchMapping("/{reviewId}")
-    public ResponseDto<ReviewUpdateResponseDto> updateReview(@PathVariable UUID reviewId,
-                                                              @RequestBody @Valid ReviewUpdateRequestDto requestDto){
-        ReviewUpdateResponseDto responseDto = reviewService.updateReview(reviewId, requestDto);
+    public ResponseDto<ReviewUpdateResponseDto> updateReview(
+            @AuthUser AuthUserInfo authUserInfo,
+            @PathVariable UUID reviewId,
+            @RequestBody @Valid ReviewUpdateRequestDto requestDto){
+        ReviewUpdateResponseDto responseDto = reviewService.updateReview(authUserInfo.getUserId(),reviewId, requestDto);
         return ResponseDto.success("리뷰 수정 성공", responseDto);
     }
 
     @DeleteMapping("/{reviewId}")
-    public ResponseDto<?> deleteReview(@PathVariable UUID reviewId){
-        reviewService.deleteReview(reviewId);
+    public ResponseDto<?> deleteReview(
+            @AuthUser AuthUserInfo authUserInfo,
+            @PathVariable UUID reviewId){
+        reviewService.deleteReview(authUserInfo.getUserId(),reviewId);
         return ResponseDto.success("리뷰 삭제 성공", null);
     }
 
@@ -69,6 +77,13 @@ public class ReviewController {
     @GetMapping("/ratings/top")
     public ResponseEntity<List<CaregiverTopRatingDto>> getTop10Caregivers() {
         return ResponseEntity.ok(reviewService.getTop10Caregivers());
+    }
+
+    // 간병인 Id를 파라미터로 받아서 리뷰 조회 후 평점 반환
+    @GetMapping("/ratings/calculate")
+    public ResponseDto<CaregiverRatingDto> calculateRating(@RequestParam UUID caregiverId) {
+        CaregiverRatingDto rating = reviewService.calculateAverageRating(caregiverId);
+        return ResponseDto.success("실시간 평균 평점 조회 성공", rating);
     }
 
 

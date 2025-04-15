@@ -1,5 +1,6 @@
 package com.carenest.business.userservice.application.dto.request;
 
+import com.carenest.business.common.model.UserRole;
 import lombok.*;
 
 @Getter
@@ -14,4 +15,5 @@ public class SignupRequestDTO {
     private String email;
     private String name;
     private String phoneNumber;
+    private UserRole role;
 }

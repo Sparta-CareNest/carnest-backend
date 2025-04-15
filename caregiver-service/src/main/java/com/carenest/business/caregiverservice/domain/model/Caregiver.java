@@ -97,4 +97,8 @@ public class Caregiver extends BaseEntity {
 	public void updateApprovalStatus(boolean check) {
 		this.approvalStatus = check;
 	}
+
+	public void updateRating(double rating) {
+		this.rating = rating;
+	}
 }

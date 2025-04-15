@@ -18,7 +18,7 @@ import com.carenest.business.caregiverservice.presentation.dto.request.Caregiver
 public interface CaregiverService {
 
 	CaregiverCreateResponseServiceDTO createCaregiver(CaregiverCreateRequestServiceDTO requestServiceDTO,
-		List<MultipartFile> multipartFiles);
+		List<MultipartFile> multipartFiles, UUID userId);
 
 	CaregiverReadResponseServiceDTO getCaregiver(UUID userId);
 
@@ -35,4 +35,6 @@ public interface CaregiverService {
 	Page<CaregiverReadResponseServiceDTO> getCaregiverAll(Pageable pageable);
 
 	List<CaregiverGetTop10ResponseServiceDTO> getTop10Caregiver();
+
+	CaregiverReadResponseServiceDTO getCaregiverDetailUser(UUID caregiverId);
 }

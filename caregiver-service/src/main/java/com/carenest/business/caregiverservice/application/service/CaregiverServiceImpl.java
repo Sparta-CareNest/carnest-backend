@@ -28,6 +28,7 @@ import com.carenest.business.caregiverservice.exception.CaregiverException;
 import com.carenest.business.caregiverservice.exception.ErrorCode;
 import com.carenest.business.caregiverservice.infrastructure.client.ReviewClient;
 import com.carenest.business.caregiverservice.infrastructure.client.UserClient;
+import com.carenest.business.caregiverservice.infrastructure.client.dto.CaregiverRatingDto;
 import com.carenest.business.caregiverservice.infrastructure.client.dto.CaregiverTopRatingDto;
 import com.carenest.business.caregiverservice.infrastructure.repository.CaregiverRepository;
 import com.carenest.business.caregiverservice.infrastructure.repository.CategoryLocationRepository;
@@ -65,11 +66,11 @@ public class CaregiverServiceImpl implements CaregiverService {
 	@Override
 	@Transactional
 	public CaregiverCreateResponseServiceDTO createCaregiver(CaregiverCreateRequestServiceDTO requestServiceDTO,
-		List<MultipartFile> multipartFiles) {
+		List<MultipartFile> multipartFiles, UUID userId) {
 
 		// 유저 존재하는지 검증
 		try{
-			if(!userClient.isExistedCaregiver(requestServiceDTO.userId())){
+			if(!userClient.isExistedCaregiver(userId)){
 				throw new BaseException(CommonErrorCode.FORBIDDEN);
 			}
 		}catch (FeignException e){
@@ -77,7 +78,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 		}
 
 		// 간병인에 등록되어 있는지 검증
-		if(caregiverRepository.existsByUserId(requestServiceDTO.userId())){
+		if(caregiverRepository.existsByUserId(userId)){
 			throw new CaregiverException(ErrorCode.ALREADY_REGISTERED_COMPANY);
 		}
 
@@ -115,7 +116,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 		}
 
 		Caregiver caregiver = caregiverDomainService.createCaregiverWithCategories(requestServiceDTO, categoryServices,
-			categoryLocations,uploadUrls);
+			categoryLocations,uploadUrls, userId);
 
 		Caregiver saveCaregiver = caregiverRepository.save(caregiver);
 
@@ -292,8 +293,43 @@ public class CaregiverServiceImpl implements CaregiverService {
 			return result;
 
 		}catch (FeignException e){
+			log.error("리뷰 서비스 호출 실패: status={}, message={}", e.status(), e.getMessage());
 			throw new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
 		}
+	}
+
+	@Override
+	@Transactional
+	public CaregiverReadResponseServiceDTO getCaregiverDetailUser(UUID caregiverId) {
+		// 1. N+1 문제로 fetchJoin 으로 가져옴
+		Caregiver caregiver = caregiverRepository.findCaregiverWithCategoriesById(caregiverId)
+			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
+
+		// 2. DTO 이름으로 변환하기 위해
+		List<String> categoryServiceNames = caregiver.getCaregiverCategoryServices()
+			.stream()
+			.map(n -> n.getCategoryService().getName())
+			.toList();
+
+		List<String> categoryLocationNames = caregiver.getCaregiverCategoryLocations()
+			.stream()
+			.map(n -> n.getCategoryLocation().getName())
+			.toList();
+
+		// 3. 리뷰 서비스에서, 평점 조회 후 새롭게 갱신
+		try{
+			CaregiverRatingDto ratingDto = reviewClient.calculateRating(caregiverId).getData();
+			log.info("리뷰 서비스에서 동기 데이터 수신: {}",ratingDto);
+			caregiver.updateRating(ratingDto.getAverageRating());
+		}catch (FeignException e){
+			log.error("리뷰 서비스 호출 실패: status={}, message={}", e.status(), e.getMessage());
+			throw new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
+		}
+
+		return new CaregiverReadResponseServiceDTO(caregiver.getId(), caregiver.getUserId(), caregiver.getDescription(),
+			caregiver.getRating(), caregiver.getExperienceYears(), caregiver.getPricePerHour(),
+			caregiver.getPricePerDay(), caregiver.getApprovalStatus(), caregiver.getGender(), categoryServiceNames,
+			categoryLocationNames);
 	}
 
 }

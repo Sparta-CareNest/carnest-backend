@@ -1,5 +1,7 @@
 package com.carenest.business.reviewservice.application.service;
 
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 import com.carenest.business.reviewservice.application.dto.response.*;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
@@ -10,6 +12,7 @@ import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCus
 import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
 import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
+import com.carenest.business.reviewservice.infrastructure.client.UserInternalClient;
 import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,13 +30,22 @@ public class ReviewService {
     private final ReviewRepositoryCustom reviewRepositoryCustom;
     private final CaregiverInternalClient caregiverInternalClient;
     private final CaregiverRatingProducer caregiverRatingProducer;
+    private final UserInternalClient userInternalClient;
 
 
     // 리뷰생성
     @Transactional
-    public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
-        // caregiverId 유효성 검사
-        validateCaregiver(requestDto.getCaregiverId());
+    public ReviewCreateResponseDto createReview(UUID userId, ReviewCreateRequestDto requestDto) {
+
+        // 사용자 존재 여부 검증
+        if (!Boolean.TRUE.equals(userInternalClient.isExistedUser(userId))) {
+            throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
+        }
+
+        // 간병인 존재 여부 검증
+        if (!Boolean.TRUE.equals(caregiverInternalClient.isExistedCaregiver(requestDto.getCaregiverId()))) {
+            throw new ReviewException(ErrorCode.INVALID_CAREGIVER);
+        }
 
         Review review = Review.builder()
                 .reservationId(requestDto.getReservationId())
@@ -46,7 +58,7 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         // kafka 메세지 발행
-        caregiverRatingProducer.sendRatingUpdateMessage(requestDto.getCaregiverId().toString());
+        // caregiverRatingProducer.sendRatingUpdateMessage(requestDto.getCaregiverId().toString());
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
     }
@@ -77,9 +89,13 @@ public class ReviewService {
 
     // 리뷰 수정
     @Transactional
-    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto) {
+    public ReviewUpdateResponseDto updateReview(UUID userId, UUID reviewId, ReviewUpdateRequestDto requestDto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
+
+        if (!review.getUserId().equals(userId)) {
+            throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
+        }
 
         review.update(requestDto.getRating(), requestDto.getContent());
 
@@ -88,9 +104,13 @@ public class ReviewService {
 
     // 리뷰 삭제
     @Transactional
-    public void deleteReview(UUID reviewId) {
+    public void deleteReview(UUID userId, UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
+
+        if (!review.getUserId().equals(userId)) {
+            throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
+        }
 
         review.softDelete();
     }
@@ -155,5 +175,24 @@ public class ReviewService {
                 })
                 .limit(10)
                 .toList();
+    }
+
+    // 간병인 Id를 파라미터로 받아서 리뷰 조회 후 평점 반환
+    @Transactional(readOnly = true)
+    public CaregiverRatingDto calculateAverageRating(UUID caregiverId) {
+        List<Review> reviews = reviewRepository.findAllByCaregiverId(caregiverId);
+
+        if (reviews.isEmpty()) {
+            return new CaregiverRatingDto(caregiverId, 0.0, 0L);
+        }
+
+        double average = reviews.stream()
+                .mapToDouble(Review::getRating)
+                .average()
+                .orElse(0.0);
+
+        long reviewCount = reviews.size();
+
+        return new CaregiverRatingDto(caregiverId, average, reviewCount);
     }
 }

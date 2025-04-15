@@ -64,12 +64,12 @@ public class CaregiverController {
 		@AuthUser AuthUserInfo authUserInfo
 	){
 
-		if(!authUserInfo.getRole().equals(UserRole.CAREGIVER.toString())){
+		if(!authUserInfo.getRole().equals(UserRole.CAREGIVER)){
 			throw new BaseException(CommonErrorCode.FORBIDDEN);
 		}
 
 		CaregiverCreateRequestServiceDTO requestServiceDTO = presentationMapper.toCreateServiceDto(createRequestDTO);
-		CaregiverCreateResponseServiceDTO responseDTO = caregiverService.createCaregiver(requestServiceDTO,multipartFiles);
+		CaregiverCreateResponseServiceDTO responseDTO = caregiverService.createCaregiver(requestServiceDTO,multipartFiles, authUserInfo.getUserId());
 		return ResponseDto.success("서비스 등록 요청이 접수되었습니다. 관리자 승인 후 활성화됩니다.",presentationMapper.toCreateResponseDto(responseDTO));
 	}
 
@@ -81,6 +81,16 @@ public class CaregiverController {
 		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiver(authUserInfo.getUserId());
 		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
 	}
+
+	// 사용자가 이용하는 간병인 조회
+	@GetMapping("/{caregiverId}")
+	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetailUser(
+		@PathVariable UUID caregiverId
+	){
+		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiverDetailUser(caregiverId);
+		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
+	}
+
 
 	// Update
 	@PatchMapping()

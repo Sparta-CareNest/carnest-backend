@@ -1,7 +1,7 @@
 package com.carenest.business.userservice.infrastructure.security;
 
 
-import com.carenest.business.userservice.domain.model.UserRoleEnum;
+import com.carenest.business.common.model.UserRole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -46,7 +46,7 @@ public class JwtUtil {
     }
 
     // 토큰 생성
-    public String createToken(UUID userId, String username,String email, UserRoleEnum role) {
+    public String createToken(UUID userId, String username,String email, UserRole role) {
         Date date = new Date();
 
         return BEARER_PREFIX +
