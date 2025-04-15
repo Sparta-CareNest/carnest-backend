@@ -66,12 +66,12 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 	}
 
 	@Override
-	public Optional<Caregiver> findCaregiverWithCategories(UUID caregiverId) {
+	public Optional<Caregiver> findCaregiverWithCategories(UUID userId) {
 		Caregiver result = jpaQueryFactory
 			.selectFrom(caregiver)
 			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
 			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
-			.where(caregiver.id.eq(caregiverId))
+			.where(caregiver.userId.eq(userId))
 			.fetchOne();
 
 		return Optional.ofNullable(result);

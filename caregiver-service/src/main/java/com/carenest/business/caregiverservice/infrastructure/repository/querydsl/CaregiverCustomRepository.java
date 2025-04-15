@@ -11,7 +11,7 @@ import com.carenest.business.caregiverservice.domain.model.Caregiver;
 public interface CaregiverCustomRepository {
 	Page<Caregiver> searchByConditions(String location, String service, Pageable pageable);
 
-	Optional<Caregiver> findCaregiverWithCategories(UUID caregiverId);
+	Optional<Caregiver> findCaregiverWithCategories(UUID userId);
 
 	Page<Caregiver> findAllCaregivers(Pageable pageable);
 }

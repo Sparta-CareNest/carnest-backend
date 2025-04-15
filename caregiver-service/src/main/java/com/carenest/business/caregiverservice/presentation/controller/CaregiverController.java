@@ -25,15 +25,20 @@ import com.carenest.business.caregiverservice.application.dto.response.Caregiver
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.service.CaregiverService;
-import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverGetTop10ResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverCreateResponseDTO;
+import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverGetTop10ResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverSearchResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverUpdateResponseDTO;
 import com.carenest.business.caregiverservice.util.PageableUtils;
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
+import com.carenest.business.common.model.UserRole;
 import com.carenest.business.common.response.ResponseDto;
 
 import lombok.RequiredArgsConstructor;
@@ -55,8 +60,13 @@ public class CaregiverController {
 	@PostMapping(consumes = "multipart/form-data")
 	public ResponseDto<CaregiverCreateResponseDTO> createCaregiver(
 		@RequestPart("data") CaregiverCreateRequestDTO createRequestDTO,
-		@RequestPart(value = "images", required = false) List<MultipartFile> multipartFiles
+		@RequestPart(value = "images", required = false) List<MultipartFile> multipartFiles,
+		@AuthUser AuthUserInfo authUserInfo
 	){
+
+		if(!authUserInfo.getRole().equals(UserRole.CAREGIVER.toString())){
+			throw new BaseException(CommonErrorCode.FORBIDDEN);
+		}
 
 		CaregiverCreateRequestServiceDTO requestServiceDTO = presentationMapper.toCreateServiceDto(createRequestDTO);
 		CaregiverCreateResponseServiceDTO responseDTO = caregiverService.createCaregiver(requestServiceDTO,multipartFiles);
@@ -64,27 +74,36 @@ public class CaregiverController {
 	}
 
 	// Read (개인 조회)
-	@GetMapping("/{caregiverId}")
-	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetail(@PathVariable UUID caregiverId){
-		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiver(caregiverId);
+	@GetMapping
+	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetail(
+		@AuthUser AuthUserInfo authUserInfo
+	){
+		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiver(authUserInfo.getUserId());
 		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
 	}
 
 	// Update
-	@PatchMapping("/{caregiverId}")
+	@PatchMapping()
 	public ResponseDto<CaregiverUpdateResponseDTO> updateCaregiver(
-		@PathVariable UUID caregiverId,
-		@RequestBody CaregiverUpdateRequestDTO requestDTO
+		@RequestBody CaregiverUpdateRequestDTO requestDTO,
+		@AuthUser AuthUserInfo authUserInfo
 	){
-		CaregiverUpdateResponseServiceDTO responseDTO = caregiverService.updateCaregiver(caregiverId,requestDTO);
+		CaregiverUpdateResponseServiceDTO responseDTO = caregiverService.updateCaregiver(authUserInfo.getUserId(),requestDTO);
 		return ResponseDto.success("간병인 정보가 수정되었습니다.",presentationMapper.toUpdateResponseDto(responseDTO));
 	}
 
 	// Delete
 	@DeleteMapping("/{caregiverId}")
 	public ResponseDto<Void> deleteCaregiver(
-		@PathVariable UUID caregiverId
+		@PathVariable UUID caregiverId,
+		@AuthUser AuthUserInfo authUserInfo
 	){
+		// Admin, Caregiver 권한이 아니면 거부
+		if(!(authUserInfo.getRole().equals(UserRole.CAREGIVER.toString())) &&
+			authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+			throw new BaseException(CommonErrorCode.FORBIDDEN);
+		}
+
 		caregiverService.deleteCaregiver(caregiverId);
 		return ResponseDto.success("간병인 정보가 삭제되었습니다.",null);
 	}
