@@ -35,4 +35,6 @@ public interface CaregiverService {
 	Page<CaregiverReadResponseServiceDTO> getCaregiverAll(Pageable pageable);
 
 	List<CaregiverGetTop10ResponseServiceDTO> getTop10Caregiver();
+
+	CaregiverReadResponseServiceDTO getCaregiverDetailUser(UUID caregiverId);
 }

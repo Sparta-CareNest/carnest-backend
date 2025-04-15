@@ -100,4 +100,18 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 
 		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());
 	}
+
+	@Override
+	public Optional<Caregiver> findCaregiverWithCategoriesById(UUID caregiverId) {
+
+		Caregiver result = jpaQueryFactory
+			.selectFrom(caregiver)
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
+			.where(
+				caregiver.id.eq(caregiverId)
+			).fetchOne();
+
+		return Optional.ofNullable(result);
+	}
 }

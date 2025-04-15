@@ -32,8 +32,7 @@ public class JwtAuthFilter implements GatewayFilter {
         String path = exchange.getRequest().getURI().getPath();
 
         // JWT 없이 통과시킬 경로 예외 처리
-        if (path.equals("/api/v1/users/signup") || path.equals("/api/v1/users/login") ||
-            path.equals("/api/v1/caregivers/search") || path.equals("/api/v1/caregivers/rating/top")) {
+        if (path.equals("/api/v1/users/signup") || path.equals("/api/v1/users/login")) {
             return chain.filter(exchange);
         }
 
