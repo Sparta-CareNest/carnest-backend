@@ -58,7 +58,7 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         // kafka 메세지 발행
-        caregiverRatingProducer.sendRatingUpdateMessage(requestDto.getCaregiverId().toString());
+        // caregiverRatingProducer.sendRatingUpdateMessage(requestDto.getCaregiverId().toString());
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
     }
