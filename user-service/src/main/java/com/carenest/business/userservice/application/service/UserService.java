@@ -2,12 +2,12 @@ package com.carenest.business.userservice.application.service;
 
 import java.util.UUID;
 
+import com.carenest.business.common.model.UserRole;
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
 import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
 import com.carenest.business.userservice.domain.model.User;
-import com.carenest.business.userservice.domain.model.UserRoleEnum;
 import com.carenest.business.userservice.domain.repository.UserRepository;
 import com.carenest.business.userservice.infrastructure.security.JwtUtil;
 import com.carenest.business.common.annotation.AuthUserInfo;
@@ -49,7 +49,7 @@ public class UserService {
                 .email(request.getEmail())
                 .name(request.getName())
                 .phoneNumber(request.getPhoneNumber())
-                .role(UserRoleEnum.USER)
+                .role(request.getRole())
                 .build();
 
         User savedUser = userRepository.save(user);
