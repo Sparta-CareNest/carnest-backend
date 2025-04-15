@@ -12,7 +12,6 @@ import jakarta.validation.constraints.Size;
 
 // Using record for immutable DTO
 public record CaregiverCreateRequestDTO(
-	@NotNull UUID userId,
 	@NotBlank @Size(max = 500) String description,
 	@NotNull @Min(0) Integer experienceYears,
 	@NotNull @Min(0) Integer pricePerHour,
