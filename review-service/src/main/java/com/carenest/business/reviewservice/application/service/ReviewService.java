@@ -87,9 +87,13 @@ public class ReviewService {
 
     // 리뷰 수정
     @Transactional
-    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto) {
+    public ReviewUpdateResponseDto updateReview(UUID userId, UUID reviewId, ReviewUpdateRequestDto requestDto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
+
+        if (!review.getUserId().equals(userId)) {
+            throw new ReviewException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
+        }
 
         review.update(requestDto.getRating(), requestDto.getContent());
 
@@ -98,9 +102,13 @@ public class ReviewService {
 
     // 리뷰 삭제
     @Transactional
-    public void deleteReview(UUID reviewId) {
+    public void deleteReview(UUID userId, UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
+
+        if (!review.getUserId().equals(userId)) {
+            throw new ReviewException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
+        }
 
         review.softDelete();
     }
