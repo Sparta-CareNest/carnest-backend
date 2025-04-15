@@ -10,6 +10,7 @@ import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCus
 import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
 import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
+import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +26,10 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewRepositoryCustom reviewRepositoryCustom;
     private final CaregiverInternalClient caregiverInternalClient;
+    private final CaregiverRatingProducer caregiverRatingProducer;
 
 
-
+    // 리뷰생성
     @Transactional
     public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
         // caregiverId 유효성 검사
@@ -43,6 +45,9 @@ public class ReviewService {
 
         Review savedReview = reviewRepository.save(review);
 
+        // kafka 메세지 발행
+        caregiverRatingProducer.sendRatingUpdateMessage(requestDto.getCaregiverId().toString());
+
         return ReviewCreateResponseDto.fromEntity(savedReview);
     }
 
@@ -52,15 +57,17 @@ public class ReviewService {
         }
     }
 
+    // 리뷰 단일 조회
     @Transactional(readOnly = true)
-    public ReviewCreateResponseDto getReviewById(UUID reviewId){
+    public ReviewCreateResponseDto getReviewById(UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
         return ReviewCreateResponseDto.fromEntity(review);
     }
 
+    // 리뷰 전체 조회
     @Transactional(readOnly = true)
-    public List<ReviewCreateResponseDto> getAllReviews(){
+    public List<ReviewCreateResponseDto> getAllReviews() {
         List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
         return reviews.stream()
                 .map(ReviewCreateResponseDto::fromEntity)
@@ -68,8 +75,9 @@ public class ReviewService {
 
     }
 
+    // 리뷰 수정
     @Transactional
-    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto){
+    public ReviewUpdateResponseDto updateReview(UUID reviewId, ReviewUpdateRequestDto requestDto) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
 
@@ -78,6 +86,7 @@ public class ReviewService {
         return ReviewUpdateResponseDto.fromEntity(review);
     }
 
+    // 리뷰 삭제
     @Transactional
     public void deleteReview(UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
@@ -86,6 +95,7 @@ public class ReviewService {
         review.softDelete();
     }
 
+    // 리뷰 검색
     @Transactional(readOnly = true)
     public List<ReviewSearchResponseDto> searchReviews(ReviewSearchRequestDto searchRequestDto) {
         List<Review> reviews = reviewRepositoryCustom.searchReviews(searchRequestDto);
@@ -95,6 +105,7 @@ public class ReviewService {
                 .toList();
     }
 
+    // 간병인 평균 평점 조회
     @Transactional(readOnly = true)
     public CaregiverRatingDto getCaregiverRating(UUID caregiverId) {
         List<Review> reviews = reviewRepository.findAllByCaregiverId(caregiverId);
@@ -114,12 +125,13 @@ public class ReviewService {
         return new CaregiverRatingDto(caregiverId, average, reviewCount);
     }
 
+    // 인기간병인 조회
     @Transactional(readOnly = true)
     public List<CaregiverTopRatingDto> getTop10Caregivers() {
         List<Review> reviews = reviewRepository.findAllByIsDeletedFalse();
 
         return reviews.stream()
-                .collect(Collectors.groupingBy(Review::getCaregiverId))
+                .collect(Collectors.groupingBy(Review::getCaregiverId)) // 간병인 ID로 그룹핑
                 .entrySet().stream()
                 .map(entry -> {
                     UUID caregiverId = entry.getKey();
@@ -134,9 +146,14 @@ public class ReviewService {
 
                     return new CaregiverTopRatingDto(caregiverId, average, reviewCount);
                 })
-                .sorted((a, b) -> Double.compare(b.getAverageRating(), a.getAverageRating()))
+                .sorted((a, b) -> {
+                    int result = Double.compare(b.getAverageRating(), a.getAverageRating());
+                    if (result == 0) {
+                        return Long.compare(b.getReviewCount(), a.getReviewCount());
+                    }
+                    return result;
+                })
                 .limit(10)
                 .toList();
     }
-
 }
