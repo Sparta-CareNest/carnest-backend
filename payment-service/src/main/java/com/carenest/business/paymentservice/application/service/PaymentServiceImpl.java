@@ -43,7 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public PaymentResponse createPayment(PaymentCreateRequest request) {
+    public PaymentResponse createPayment(PaymentCreateRequest request, UUID guardianId) {
         log.info("결제 생성 요청: reservationId={}, amount={}", request.getReservationId(), request.getAmount());
 
         // 동일한 예약에 대해 결제가 이미 존재하는지 확인
@@ -68,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             Payment payment = new Payment(
                     request.getReservationId(),
-                    request.getGuardianId(),
+                    guardianId,
                     request.getCaregiverId(),
                     request.getAmount(),
                     request.getPaymentMethod(),
