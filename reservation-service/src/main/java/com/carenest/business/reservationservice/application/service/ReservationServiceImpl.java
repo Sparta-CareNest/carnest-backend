@@ -37,8 +37,8 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     @Transactional
-    public ReservationResponse createReservation(ReservationCreateRequest request) {
-        log.info("예약 생성 시작: guardianId={}, caregiverId={}", request.getGuardianId(), request.getCaregiverId());
+    public ReservationResponse createReservation(ReservationCreateRequest request, UUID guardianId) {
+        log.info("예약 생성 시작: guardianId={}, caregiverId={}", guardianId, request.getCaregiverId());
 
         // 간병인 정보를 조회해서 가격 검증
         try {
@@ -50,7 +50,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         Reservation reservation = new Reservation(
-                request.getGuardianId(),
+                guardianId,
                 request.getGuardianName(),
                 request.getCaregiverId(),
                 request.getCaregiverName(),
