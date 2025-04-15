@@ -22,10 +22,10 @@ public class CaregiverDomainServiceImpl implements CaregiverDomainService {
 	public Caregiver createCaregiverWithCategories(
 		CaregiverCreateRequestServiceDTO request,
 		List<CategoryService> categoryServices,
-		List<CategoryLocation> categoryLocations, List<String> uploadUrls) {
+		List<CategoryLocation> categoryLocations, List<String> uploadUrls, UUID userId) {
 
 		Caregiver caregiver = Caregiver.builder()
-			.userId(request.userId())
+			.userId(userId)
 			.description(request.description())
 			.experienceYears(request.experienceYears())
 			.pricePerDay(request.pricePerDay())

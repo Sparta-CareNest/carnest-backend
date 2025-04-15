@@ -65,11 +65,11 @@ public class CaregiverServiceImpl implements CaregiverService {
 	@Override
 	@Transactional
 	public CaregiverCreateResponseServiceDTO createCaregiver(CaregiverCreateRequestServiceDTO requestServiceDTO,
-		List<MultipartFile> multipartFiles) {
+		List<MultipartFile> multipartFiles, UUID userId) {
 
 		// 유저 존재하는지 검증
 		try{
-			if(!userClient.isExistedCaregiver(requestServiceDTO.userId())){
+			if(!userClient.isExistedCaregiver(userId)){
 				throw new BaseException(CommonErrorCode.FORBIDDEN);
 			}
 		}catch (FeignException e){
@@ -77,7 +77,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 		}
 
 		// 간병인에 등록되어 있는지 검증
-		if(caregiverRepository.existsByUserId(requestServiceDTO.userId())){
+		if(caregiverRepository.existsByUserId(userId)){
 			throw new CaregiverException(ErrorCode.ALREADY_REGISTERED_COMPANY);
 		}
 
@@ -115,7 +115,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 		}
 
 		Caregiver caregiver = caregiverDomainService.createCaregiverWithCategories(requestServiceDTO, categoryServices,
-			categoryLocations,uploadUrls);
+			categoryLocations,uploadUrls, userId);
 
 		Caregiver saveCaregiver = caregiverRepository.save(caregiver);
 
