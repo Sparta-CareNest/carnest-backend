@@ -25,6 +25,9 @@ public class GatewayConfig {
                         .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://notification-service"))
 
+                .route("caregiver-service", r -> r.path("/api/v1/caregivers/**","/internal/v1/caregivers/**")
+                    .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://caregiver-service"))
                 .build();
     }
 }
