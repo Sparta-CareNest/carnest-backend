@@ -4,9 +4,11 @@ import lombok.Getter;
 
 import java.util.UUID;
 
+import com.carenest.business.common.model.UserRole;
+
 @Getter
 public class AuthUserInfo {
     private UUID userId;
     private String email;
-    private String role;
+    private UserRole role;
 }

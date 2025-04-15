@@ -6,7 +6,6 @@ import java.util.UUID;
 import com.carenest.business.caregiverservice.domain.model.GenderType;
 
 public record CaregiverCreateRequestServiceDTO(
-	UUID userId,
 	String description,
 	Integer experienceYears,
 	Integer pricePerHour,
@@ -18,7 +17,6 @@ public record CaregiverCreateRequestServiceDTO(
 ) {
 	public CaregiverCreateRequestServiceDTO withImageUrls(List<String> newImageUrls) {
 		return new CaregiverCreateRequestServiceDTO(
-			userId,
 			description,
 			experienceYears,
 			pricePerHour,
