@@ -82,6 +82,16 @@ public class CaregiverController {
 		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
 	}
 
+	// 사용자가 이용하는 간병인 조회
+	@GetMapping("/{caregiverId}")
+	public ResponseDto<CaregiverReadResponseDTO> getCaregiverDetailUser(
+		@PathVariable UUID caregiverId
+	){
+		CaregiverReadResponseServiceDTO responseDTO = caregiverService.getCaregiverDetailUser(caregiverId);
+		return ResponseDto.success(presentationMapper.toReadResponseDto(responseDTO));
+	}
+
+
 	// Update
 	@PatchMapping()
 	public ResponseDto<CaregiverUpdateResponseDTO> updateCaregiver(
