@@ -1,5 +1,7 @@
 package com.carenest.business.reviewservice.presentation.controller;
 
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
@@ -22,8 +24,10 @@ public class ReviewController {
     private final ReviewService reviewService;
 
     @PostMapping
-    public ResponseDto<ReviewCreateResponseDto> createReview(@RequestBody @Valid ReviewCreateRequestDto requestDto){
-        ReviewCreateResponseDto responseDto = reviewService.createReview(requestDto);
+    public ResponseDto<ReviewCreateResponseDto> createReview(
+            @AuthUser AuthUserInfo authUserInfo,
+            @RequestBody @Valid ReviewCreateRequestDto requestDto){
+        ReviewCreateResponseDto responseDto = reviewService.createReview(authUserInfo.getUserId(), requestDto);
         return ResponseDto.success("리뷰 등록 성공",responseDto);
     }
 

@@ -10,6 +10,7 @@ import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCus
 import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
 import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
+import com.carenest.business.reviewservice.infrastructure.client.UserInternalClient;
 import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,13 +28,22 @@ public class ReviewService {
     private final ReviewRepositoryCustom reviewRepositoryCustom;
     private final CaregiverInternalClient caregiverInternalClient;
     private final CaregiverRatingProducer caregiverRatingProducer;
+    private final UserInternalClient userInternalClient;
 
 
     // 리뷰생성
     @Transactional
-    public ReviewCreateResponseDto createReview(ReviewCreateRequestDto requestDto) {
-        // caregiverId 유효성 검사
-        validateCaregiver(requestDto.getCaregiverId());
+    public ReviewCreateResponseDto createReview(UUID userId, ReviewCreateRequestDto requestDto) {
+
+        // 사용자 존재 여부 검증
+        if (!Boolean.TRUE.equals(userInternalClient.isExistedUser(userId))) {
+            throw new ReviewException(ErrorCode.INVALID_USER);
+        }
+
+        // 간병인 존재 여부 검증
+        if (!Boolean.TRUE.equals(caregiverInternalClient.isExistedCaregiver(requestDto.getCaregiverId()))) {
+            throw new ReviewException(ErrorCode.INVALID_CAREGIVER);
+        }
 
         Review review = Review.builder()
                 .reservationId(requestDto.getReservationId())
