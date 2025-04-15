@@ -1,5 +1,9 @@
 package com.carenest.business.notificationservice.presentation.controller;
 
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.notificationservice.application.dto.request.NotificationCreateRequestDto;
 import com.carenest.business.notificationservice.application.dto.response.NotificationResponseDto;
@@ -9,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.UUID;
 @Slf4j
@@ -50,7 +55,14 @@ public class NotificationController {
     // 4. 알림 목록 조회
     @GetMapping("/{receiverId}")
     public ResponseDto<List<NotificationResponseDto>> getNotifications(
-            @PathVariable("receiverId") UUID receiverId) {
+            @PathVariable("receiverId") UUID receiverId,
+            @AuthUser AuthUserInfo authUserInfo
+    ) {
+        // 요청한 알림의 receiverId가 현재 인증된 사용자와 일치하는지 확인
+        if (!receiverId.equals(authUserInfo.getUserId())) {
+            throw new BaseException(CommonErrorCode.FORBIDDEN);
+        }
+
         List<NotificationResponseDto> notifications = notificationService.getNotificationsByReceiverId(receiverId);
         return ResponseDto.success("알림 목록 조회 성공", notifications);
     }
