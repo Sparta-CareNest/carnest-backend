@@ -17,6 +17,11 @@ import com.carenest.business.caregiverservice.application.service.CaregiverServi
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.util.PageableUtils;
+import com.carenest.business.common.annotation.AuthUser;
+import com.carenest.business.common.annotation.AuthUserInfo;
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
+import com.carenest.business.common.model.UserRole;
 import com.carenest.business.common.response.ResponseDto;
 
 import lombok.RequiredArgsConstructor;
@@ -35,8 +40,14 @@ public class CaregiverInternalController {
 	@PatchMapping("/{id}/status")
 	public ResponseDto<Void> updateCaregiverStatus(
 		@PathVariable UUID id,
-		@RequestParam boolean approvalStatusCheck
+		@RequestParam boolean approvalStatusCheck,
+		@AuthUser AuthUserInfo authUserInfo
 	){
+
+		if(!authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+			throw new BaseException(CommonErrorCode.FORBIDDEN);
+		}
+
 		caregiverService.updateCaregiverStatus(id,approvalStatusCheck);
 		return ResponseDto.success(null);
 	}
@@ -53,8 +64,14 @@ public class CaregiverInternalController {
 		@RequestParam(required = false) Integer page,
 		@RequestParam(required = false) Integer size,
 		@RequestParam(required = false) String sortDirection,
-		@RequestParam(required = false) String sortProperty
+		@RequestParam(required = false) String sortProperty,
+		@AuthUser AuthUserInfo authUserInfo
 	){
+
+		if(!authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+			throw new BaseException(CommonErrorCode.FORBIDDEN);
+		}
+
 		Pageable pageable = PageableUtils.customPageable(page,size,sortDirection,sortProperty);
 		Page<CaregiverReadResponseServiceDTO> responseDTO = caregiverService.getCaregiverAll(pageable);
 
