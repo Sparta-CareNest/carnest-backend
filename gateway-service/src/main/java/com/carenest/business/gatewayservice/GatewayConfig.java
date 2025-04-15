@@ -20,6 +20,9 @@ public class GatewayConfig {
                 .route("user-service", r -> r.path("/api/v1/users/**")
                         .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://user-service"))
+                .route("review-service", r -> r.path("/api/v1/reviews/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://review-service"))
                 .build();
     }
 }
