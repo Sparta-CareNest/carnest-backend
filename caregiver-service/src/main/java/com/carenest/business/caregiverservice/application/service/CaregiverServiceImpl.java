@@ -1,6 +1,7 @@
 package com.carenest.business.caregiverservice.application.service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ import com.carenest.business.caregiverservice.domain.service.CaregiverDomainServ
 import com.carenest.business.caregiverservice.exception.CaregiverException;
 import com.carenest.business.caregiverservice.exception.ErrorCode;
 import com.carenest.business.caregiverservice.infrastructure.client.ReviewClient;
+import com.carenest.business.caregiverservice.infrastructure.client.UserClient;
 import com.carenest.business.caregiverservice.infrastructure.client.dto.CaregiverTopRatingDto;
 import com.carenest.business.caregiverservice.infrastructure.repository.CaregiverRepository;
 import com.carenest.business.caregiverservice.infrastructure.repository.CategoryLocationRepository;
@@ -34,6 +36,8 @@ import com.carenest.business.caregiverservice.infrastructure.repository.UuidRepo
 import com.carenest.business.caregiverservice.infrastructure.s3.AmazonS3Manager;
 import com.carenest.business.caregiverservice.infrastructure.s3.Uuid;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +56,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 	private final AmazonS3Manager amazonS3Manager;
 	private final AmazonConfig amazonConfig;
 	private final ReviewClient reviewClient;
+	private final UserClient userClient;
 
 
 	@Qualifier("caregiverApplicationMapper")
@@ -62,9 +67,22 @@ public class CaregiverServiceImpl implements CaregiverService {
 	public CaregiverCreateResponseServiceDTO createCaregiver(CaregiverCreateRequestServiceDTO requestServiceDTO,
 		List<MultipartFile> multipartFiles) {
 
-		// TODO: userId() 검증 로직을 추가해야함.
+		// 유저 존재하는지 검증
+		try{
+			if(!userClient.isExistedCaregiver(requestServiceDTO.userId())){
+				throw new BaseException(CommonErrorCode.FORBIDDEN);
+			}
+		}catch (FeignException e){
+			throw new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
+		}
 
-		List<String> uploadUrls = null;
+		// 간병인에 등록되어 있는지 검증
+		if(caregiverRepository.existsByUserId(requestServiceDTO.userId())){
+			throw new CaregiverException(ErrorCode.ALREADY_REGISTERED_COMPANY);
+		}
+
+		// S3 이미지 추가
+		List<String> uploadUrls = new ArrayList<>();
 		if (multipartFiles != null && !multipartFiles.isEmpty()) {
 			try {
 				// 예: S3 업로드 시 사용할 디렉토리와 고유 식별자 생성
@@ -107,9 +125,9 @@ public class CaregiverServiceImpl implements CaregiverService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public CaregiverReadResponseServiceDTO getCaregiver(UUID caregiverId) {
+	public CaregiverReadResponseServiceDTO getCaregiver(UUID userId) {
 		// 1. N+1 문제로 fetchJoin 으로 가져옴
-		Caregiver caregiver = caregiverRepository.findCaregiverWithCategories(caregiverId)
+		Caregiver caregiver = caregiverRepository.findCaregiverWithCategories(userId)
 			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
 
 		// 2. DTO 이름으로 변환하기 위해
@@ -131,9 +149,10 @@ public class CaregiverServiceImpl implements CaregiverService {
 
 	@Override
 	@Transactional
-	public CaregiverUpdateResponseServiceDTO updateCaregiver(UUID caregiverId, CaregiverUpdateRequestDTO dto) {
-		Caregiver caregiver = caregiverRepository.findById(caregiverId)
-			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
+	public CaregiverUpdateResponseServiceDTO updateCaregiver(UUID userId, CaregiverUpdateRequestDTO dto) {
+		Caregiver caregiver = caregiverRepository.findByUserId((userId)).orElseThrow(
+			() -> new CaregiverException(ErrorCode.NOT_FOUND)
+		);
 
 		// 필드 수정
 		if (dto.description() != null)
