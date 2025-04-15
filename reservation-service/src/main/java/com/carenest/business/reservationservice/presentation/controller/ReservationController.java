@@ -32,12 +32,8 @@ public class ReservationController {
             @AuthUser AuthUserInfo authUserInfo,
             @RequestBody @Valid ReservationCreateRequest request) {
 
-        // 요청자가 보호자인지 확인
-        if (!authUserInfo.getUserId().equals(request.getGuardianId())) {
-            throw new UnauthorizedReservationAccessException();
-        }
-
-        ReservationResponse response = reservationService.createReservation(request);
+        // 토큰에서 추출한 사용자 ID 사용
+        ReservationResponse response = reservationService.createReservation(request, authUserInfo.getUserId());
         return ResponseDto.success("예약이 성공적으로 생성되었습니다.", response);
     }
 
@@ -51,7 +47,7 @@ public class ReservationController {
         // 예약 당사자 또는 ADMIN만 조회 가능
         if (!authUserInfo.getUserId().equals(reservation.getGuardianId()) &&
                 !authUserInfo.getUserId().equals(reservation.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -67,7 +63,7 @@ public class ReservationController {
             @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
 
         // ADMIN만 전체 예약 목록 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             // 일반 사용자는 자신과 관련된 예약만 검색 가능하도록 제한
             if (searchRequest.getGuardianId() != null &&
                     !searchRequest.getGuardianId().equals(authUserInfo.getUserId())) {
@@ -82,9 +78,9 @@ public class ReservationController {
             // 사용자 ID로 필터링 설정
             if (searchRequest.getGuardianId() == null && searchRequest.getCaregiverId() == null) {
                 // 보호자 또는 간병인 여부
-                if (authUserInfo.getRole().equals(UserRole.GUARDIAN.getValue())) {
+                if (authUserInfo.getRole().equals(UserRole.GUARDIAN)) {
                     searchRequest.setGuardianId(authUserInfo.getUserId());
-                } else if (authUserInfo.getRole().equals(UserRole.CAREGIVER.getValue())) {
+                } else if (authUserInfo.getRole().equals(UserRole.CAREGIVER)) {
                     searchRequest.setCaregiverId(authUserInfo.getUserId());
                 }
             }
@@ -109,7 +105,7 @@ public class ReservationController {
         }
 
         // ADMIN만 전체 예약 목록 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -124,7 +120,7 @@ public class ReservationController {
             @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
 
         // ADMIN만 상태별 전체 예약 목록 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -132,17 +128,29 @@ public class ReservationController {
         return ResponseDto.success("상태별 예약 목록 조회 성공", responses);
     }
 
-    @GetMapping("/users/{userId}/reservations")
-    public ResponseDto<Page<ReservationResponse>> getUserReservations(
+    @GetMapping("/my/reservations")
+    public ResponseDto<Page<ReservationResponse>> getMyReservations(
+            @AuthUser AuthUserInfo authUserInfo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
+
+        // 토큰에서 추출한 사용자 ID 사용
+        Page<ReservationResponse> responses = reservationService.getUserReservations(
+                authUserInfo.getUserId(), startDate, endDate, pageable);
+        return ResponseDto.success("내 예약 목록 조회 성공", responses);
+    }
+
+    @GetMapping("/admin/users/{userId}/reservations")
+    public ResponseDto<Page<ReservationResponse>> getUserReservationsAdmin(
             @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
 
-        // 본인의 예약 목록 또는 ADMIN만 조회 가능
-        if (!authUserInfo.getUserId().equals(userId) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        // ADMIN만 다른 사용자의 예약 목록 조회 가능
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -160,7 +168,7 @@ public class ReservationController {
 
         // 보호자 또는 ADMIN만 예약 수정 가능
         if (!authUserInfo.getUserId().equals(reservation.getGuardianId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -178,7 +186,7 @@ public class ReservationController {
 
         // 간병인 또는 ADMIN만 예약 수락 가능
         if (!authUserInfo.getUserId().equals(reservation.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -196,7 +204,7 @@ public class ReservationController {
 
         // 간병인 또는 ADMIN만 예약 거절 가능
         if (!authUserInfo.getUserId().equals(reservation.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -218,7 +226,7 @@ public class ReservationController {
 
         // 보호자 또는 ADMIN만 예약 취소 가능
         if (!authUserInfo.getUserId().equals(reservation.getGuardianId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -240,7 +248,7 @@ public class ReservationController {
         // 간병인, 보호자 또는 ADMIN만 예약 완료 처리 가능
         if (!authUserInfo.getUserId().equals(reservation.getGuardianId()) &&
                 !authUserInfo.getUserId().equals(reservation.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -258,7 +266,7 @@ public class ReservationController {
 
         // 보호자 또는 ADMIN만 결제 연결 가능
         if (!authUserInfo.getUserId().equals(reservation.getGuardianId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -266,7 +274,7 @@ public class ReservationController {
         return ResponseDto.success("결제 정보가 연결되었습니다.", response);
     }
 
-    @GetMapping("/reservations/history")
+    @GetMapping("/admin/reservations/history")
     public ResponseDto<Page<ReservationResponse>> getReservationHistory(
             @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
@@ -274,7 +282,7 @@ public class ReservationController {
             @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
 
         // ADMIN만 전체 예약 이력 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedReservationAccessException();
         }
 
@@ -282,21 +290,16 @@ public class ReservationController {
         return ResponseDto.success("예약 이력 조회 성공", responses);
     }
 
-    @GetMapping("/users/{userId}/reservations/history")
-    public ResponseDto<Page<ReservationResponse>> getUserReservationHistory(
+    @GetMapping("/my/reservations/history")
+    public ResponseDto<Page<ReservationResponse>> getMyReservationHistory(
             @AuthUser AuthUserInfo authUserInfo,
-            @PathVariable UUID userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
 
-        // 본인의 예약 이력 또는 ADMIN만 조회 가능
-        if (!authUserInfo.getUserId().equals(userId) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
-            throw new UnauthorizedReservationAccessException();
-        }
-
-        Page<ReservationResponse> responses = reservationService.getUserReservationHistory(userId, startDate, endDate, pageable);
-        return ResponseDto.success("사용자별 예약 이력 조회 성공", responses);
+        // 토큰에서 추출한 사용자 ID 사용
+        Page<ReservationResponse> responses = reservationService.getUserReservationHistory(
+                authUserInfo.getUserId(), startDate, endDate, pageable);
+        return ResponseDto.success("내 예약 이력 조회 성공", responses);
     }
 }
