@@ -1,5 +1,7 @@
 package com.carenest.business.reviewservice.application.service;
 
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 import com.carenest.business.reviewservice.application.dto.response.*;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
@@ -37,7 +39,7 @@ public class ReviewService {
 
         // 사용자 존재 여부 검증
         if (!Boolean.TRUE.equals(userInternalClient.isExistedUser(userId))) {
-            throw new ReviewException(ErrorCode.INVALID_USER);
+            throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
         }
 
         // 간병인 존재 여부 검증
@@ -92,7 +94,7 @@ public class ReviewService {
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
 
         if (!review.getUserId().equals(userId)) {
-            throw new ReviewException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
+            throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
         }
 
         review.update(requestDto.getRating(), requestDto.getContent());
@@ -107,7 +109,7 @@ public class ReviewService {
                 .orElseThrow(() -> new ReviewException(ErrorCode.REVIEW_NOT_FOUND));
 
         if (!review.getUserId().equals(userId)) {
-            throw new ReviewException(ErrorCode.UNAUTHORIZED_REVIEW_ACCESS);
+            throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
         }
 
         review.softDelete();
