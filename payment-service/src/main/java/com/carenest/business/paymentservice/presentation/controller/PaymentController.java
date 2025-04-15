@@ -35,12 +35,8 @@ public class PaymentController {
             @AuthUser AuthUserInfo authUserInfo,
             @RequestBody PaymentCreateRequest request) {
 
-        // 요청자가 보호자인지 확인
-        if (!authUserInfo.getUserId().equals(request.getGuardianId())) {
-            throw new UnauthorizedPaymentAccessException();
-        }
-
-        PaymentResponse response = paymentService.createPayment(request);
+        // 토큰에서 추출한 사용자 ID 사용
+        PaymentResponse response = paymentService.createPayment(request, authUserInfo.getUserId());
         return ResponseDto.success("결제가 성공적으로 처리되었습니다.", response);
     }
 
@@ -54,7 +50,7 @@ public class PaymentController {
         // 본인의 결제 정보 또는 ADMIN만 조회 가능
         if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
                 !authUserInfo.getUserId().equals(payment.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -71,22 +67,22 @@ public class PaymentController {
         // 본인의 결제 정보 또는 ADMIN만 조회 가능
         if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
                 !authUserInfo.getUserId().equals(payment.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
         return ResponseDto.success("예약에 대한 결제 정보 조회 성공", payment);
     }
 
-    @GetMapping("/payments")
-    public ResponseDto<Page<PaymentListResponse>> getPayments(
+    @GetMapping("/admin/payments")
+    public ResponseDto<Page<PaymentListResponse>> getPaymentsAdmin(
             @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
 
         // ADMIN만 전체 결제 내역 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -94,22 +90,18 @@ public class PaymentController {
         return ResponseDto.success("결제 내역 조회 성공", responses);
     }
 
-    @GetMapping("/users/{userId}/payments")
-    public ResponseDto<Page<PaymentListResponse>> getUserPayments(
+    @GetMapping("/my/payments")
+    public ResponseDto<Page<PaymentListResponse>> getMyPayments(
             @AuthUser AuthUserInfo authUserInfo,
-            @PathVariable UUID userId,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        // 본인의 결제 내역 또는 ADMIN만 조회 가능
-        if (!authUserInfo.getUserId().equals(userId) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
-            throw new UnauthorizedPaymentAccessException();
-        }
+        // 토큰에서 추출한 사용자 ID 사용
+        Page<PaymentListResponse> responses = paymentService.getUserPaymentList(
+                authUserInfo.getUserId(), startDate, endDate, pageable);
 
-        Page<PaymentListResponse> responses = paymentService.getUserPaymentList(userId, startDate, endDate, pageable);
-        return ResponseDto.success("사용자별 결제 내역 조회 성공", responses);
+        return ResponseDto.success("내 결제 내역 조회 성공", responses);
     }
 
     @PatchMapping("/payments/{paymentId}/complete")
@@ -122,7 +114,7 @@ public class PaymentController {
 
         // 보호자 또는 ADMIN만 결제 완료 처리 가능
         if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -140,7 +132,7 @@ public class PaymentController {
 
         // 보호자 또는 ADMIN만 결제 취소 가능
         if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -158,7 +150,7 @@ public class PaymentController {
 
         // 보호자 또는 ADMIN만 환불 처리 가능
         if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -177,7 +169,7 @@ public class PaymentController {
         // 결제 당사자 또는 ADMIN만 이력 조회 가능
         if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
                 !authUserInfo.getUserId().equals(payment.getCaregiverId()) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -185,7 +177,7 @@ public class PaymentController {
         return ResponseDto.success("결제 이력 조회 성공", responses);
     }
 
-    @GetMapping("/payments/history")
+    @GetMapping("/admin/payments/history")
     public ResponseDto<Page<PaymentHistoryDetailResponse>> getAllPaymentHistory(
             @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
@@ -193,7 +185,7 @@ public class PaymentController {
             @PageableDefault(size = 10) Pageable pageable) {
 
         // ADMIN만 전체 결제 이력 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
             throw new UnauthorizedPaymentAccessException();
         }
 
@@ -201,21 +193,17 @@ public class PaymentController {
         return ResponseDto.success("결제 이력 조회 성공", responses);
     }
 
-    @GetMapping("/users/{userId}/payments/history")
-    public ResponseDto<Page<PaymentHistoryDetailResponse>> getUserPaymentHistory(
+    @GetMapping("/my/payments/history")
+    public ResponseDto<Page<PaymentHistoryDetailResponse>> getMyPaymentHistory(
             @AuthUser AuthUserInfo authUserInfo,
-            @PathVariable UUID userId,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        // 본인의 결제 이력 또는 ADMIN만 조회 가능
-        if (!authUserInfo.getUserId().equals(userId) &&
-                !authUserInfo.getRole().equals(UserRole.ADMIN.getValue())) {
-            throw new UnauthorizedPaymentAccessException();
-        }
+        // 토큰에서 추출한 사용자 ID 사용
+        Page<PaymentHistoryDetailResponse> responses = paymentService.getUserPaymentHistory(
+                authUserInfo.getUserId(), startDate, endDate, pageable);
 
-        Page<PaymentHistoryDetailResponse> responses = paymentService.getUserPaymentHistory(userId, startDate, endDate, pageable);
-        return ResponseDto.success("사용자별 결제 이력 조회 성공", responses);
+        return ResponseDto.success("내 결제 이력 조회 성공", responses);
     }
 }
