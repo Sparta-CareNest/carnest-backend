@@ -1,13 +1,10 @@
 package com.carenest.business.userservice.domain.model;
 
 import com.carenest.business.common.entity.BaseEntity;
+import com.carenest.business.common.model.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.UuidGenerator;
-
-import java.time.LocalDateTime;
 import java.util.UUID;
-import com.carenest.business.userservice.domain.model.UserRoleEnum;
 
 @Entity
 @Table(name = "p_user")
@@ -43,5 +40,5 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserRoleEnum role;
+    private UserRole role;
 }
