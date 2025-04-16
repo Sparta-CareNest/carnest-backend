@@ -1,5 +1,6 @@
 package com.carenest.business.reservationservice.infrastructure.config;
 
+import com.carenest.business.reservationservice.infrastructure.kafka.KafkaTopic;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -32,7 +33,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic reservationCancelledTopic() {
-        return TopicBuilder.name("reservation-cancelled")
+        return TopicBuilder.name(KafkaTopic.RESERVATION_CANCELLED.getTopicName())
                 .partitions(3)
                 .replicas(1)
                 .build();
@@ -40,7 +41,7 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic reservationStatusChangedTopic() {
-        return TopicBuilder.name("reservation-status-changed")
+        return TopicBuilder.name(KafkaTopic.RESERVATION_STATUS_CHANGED.getTopicName())
                 .partitions(3)
                 .replicas(1)
                 .build();

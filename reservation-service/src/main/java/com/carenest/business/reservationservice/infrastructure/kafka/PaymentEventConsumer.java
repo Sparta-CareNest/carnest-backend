@@ -24,7 +24,8 @@ public class PaymentEventConsumer {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    @KafkaListener(topics = "payment-completed", groupId = "reservation-service-group",
+    @KafkaListener(topics = "#{T(com.carenest.business.reservationservice.infrastructure.kafka.KafkaTopic).PAYMENT_COMPLETED.getTopicName()}",
+            groupId = "reservation-service-group",
             containerFactory = "kafkaListenerContainerFactory")
     public void consumePaymentCompletedEvent(PaymentCompletedEvent event) {
         log.info("결제 완료 이벤트 수신: paymentId={}, reservationId={}",
@@ -41,7 +42,8 @@ public class PaymentEventConsumer {
     }
 
     @Transactional
-    @KafkaListener(topics = "payment-cancelled", groupId = "reservation-service-group",
+    @KafkaListener(topics = "#{T(com.carenest.business.reservationservice.infrastructure.kafka.KafkaTopic).PAYMENT_CANCELLED.getTopicName()}",
+            groupId = "reservation-service-group",
             containerFactory = "kafkaListenerContainerFactory")
     public void consumePaymentCancelledEvent(PaymentCancelledEvent event) {
         log.info("결제 취소 이벤트 수신: paymentId={}, reservationId={}",

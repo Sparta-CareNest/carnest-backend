@@ -36,7 +36,8 @@ public class ReservationEventProducer {
 
         String key = reservation.getReservationId().toString();
 
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("reservation-cancelled", key, event);
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(
+                KafkaTopic.RESERVATION_CANCELLED.getTopicName(), key, event);
 
         future.whenComplete((result, ex) -> {
             if (ex == null) {
@@ -63,7 +64,8 @@ public class ReservationEventProducer {
 
         String key = reservation.getReservationId().toString();
 
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("reservation-status-changed", key, event);
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(
+                KafkaTopic.RESERVATION_STATUS_CHANGED.getTopicName(), key, event);
 
         future.whenComplete((result, ex) -> {
             if (ex == null) {
