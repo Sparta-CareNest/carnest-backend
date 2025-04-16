@@ -35,3 +35,8 @@ feign:
       default:
         connectTimeout: 5000
         readTimeout: 5000
+
+logging:
+  level:
+    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN
+    org.apache.kafka.clients.NetworkClient: WARN
