@@ -13,6 +13,7 @@ import com.carenest.business.paymentservice.application.dto.response.PaymentResp
 import com.carenest.business.paymentservice.application.service.PaymentService;
 import com.carenest.business.paymentservice.exception.UnauthorizedPaymentAccessException;
 import com.carenest.business.common.model.UserRole;
+import com.carenest.business.paymentservice.infrastructure.config.TossPaymentsConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -29,6 +32,7 @@ import java.util.UUID;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final TossPaymentsConfig tossConfig;
 
     @PostMapping("/payments")
     public ResponseDto<PaymentResponse> createPayment(
@@ -205,5 +209,53 @@ public class PaymentController {
                 authUserInfo.getUserId(), startDate, endDate, pageable);
 
         return ResponseDto.success("내 결제 이력 조회 성공", responses);
+    }
+
+    @PostMapping("/payments/prepare-toss")
+    public ResponseDto<Map<String, Object>> prepareTossPayment(
+            @AuthUser AuthUserInfo authUserInfo,
+            @RequestBody PaymentCreateRequest request) {
+
+        PaymentResponse response = paymentService.createPayment(request, authUserInfo.getUserId());
+
+        // 토스페이먼츠에 필요한 결제 정보 구성
+        Map<String, Object> tossPaymentInfo = new HashMap<>();
+        tossPaymentInfo.put("amount", response.getAmount());
+        tossPaymentInfo.put("orderId", "CARENEST-" + response.getReservationId().toString().substring(0, 8));
+        tossPaymentInfo.put("orderName", "CareNest 간병 서비스 예약");
+        tossPaymentInfo.put("customerName", authUserInfo.getEmail().split("@")[0]);
+        tossPaymentInfo.put("successUrl", tossConfig.getSuccessUrl() + "?paymentId=" + response.getPaymentId());
+        tossPaymentInfo.put("failUrl", tossConfig.getFailUrl());
+        tossPaymentInfo.put("paymentId", response.getPaymentId());
+
+        return ResponseDto.success("토스페이먼츠 결제 준비 정보", tossPaymentInfo);
+    }
+
+    @GetMapping("/payments/{paymentId}/pay-with-toss")
+    public ResponseDto<Map<String, Object>> getPayWithTossInfo(
+            @AuthUser AuthUserInfo authUserInfo,
+            @PathVariable UUID paymentId) {
+
+        PaymentResponse payment = paymentService.getPayment(paymentId);
+
+        // 본인의 결제 정보 또는 ADMIN만 조회 가능
+        if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
+                !authUserInfo.getUserId().equals(payment.getCaregiverId()) &&
+                !authUserInfo.getRole().equals(UserRole.ADMIN)) {
+            throw new UnauthorizedPaymentAccessException();
+        }
+
+        // 토스페이먼츠에 필요한 결제 정보 구성
+        Map<String, Object> tossPaymentInfo = new HashMap<>();
+        tossPaymentInfo.put("amount", payment.getAmount());
+        tossPaymentInfo.put("orderId", "CARENEST-" + payment.getReservationId().toString().substring(0, 8));
+        tossPaymentInfo.put("orderName", "CareNest 간병 서비스 예약");
+        tossPaymentInfo.put("customerName", authUserInfo.getEmail().split("@")[0]);
+        tossPaymentInfo.put("successUrl", tossConfig.getSuccessUrl() + "?paymentId=" + payment.getPaymentId());
+        tossPaymentInfo.put("failUrl", tossConfig.getFailUrl());
+        tossPaymentInfo.put("paymentId", payment.getPaymentId());
+        tossPaymentInfo.put("clientKey", System.getenv("TOSS_CLIENT_KEY"));
+
+        return ResponseDto.success("토스페이먼츠 결제 정보", tossPaymentInfo);
     }
 }

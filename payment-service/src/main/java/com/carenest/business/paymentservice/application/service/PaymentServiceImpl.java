@@ -19,6 +19,8 @@ import com.carenest.business.paymentservice.infrastructure.repository.PaymentRep
 import com.carenest.business.paymentservice.infrastructure.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -39,14 +41,14 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentDomainService paymentDomainService;
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationService notificationService;
-    private final PaymentEventProducer paymentEventProducer; // Kafka 이벤트 프로듀서 추가
+    private final PaymentEventProducer paymentEventProducer;
 
     @Override
     @Transactional
     public PaymentResponse createPayment(PaymentCreateRequest request, UUID guardianId) {
         log.info("결제 생성 요청: reservationId={}, amount={}", request.getReservationId(), request.getAmount());
 
-        // 동일한 예약에 대해 결제가 이미 존재하는지 확인
+        // 동일한 예약에 대해 결제가 존재하는지 확인
         Optional<Payment> existingPayment = paymentRepository.findByReservationId(request.getReservationId());
         if (existingPayment.isPresent()) {
             if (existingPayment.get().getStatus() == PaymentStatus.PENDING) {
@@ -59,6 +61,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             // 결제 게이트웨이에 결제 준비 요청
             Map<String, Object> paymentPrepareResult = paymentGatewayService.preparePayment(
                     request.getReservationId(),
@@ -72,7 +75,7 @@ public class PaymentServiceImpl implements PaymentService {
                     request.getCaregiverId(),
                     request.getAmount(),
                     request.getPaymentMethod(),
-                    request.getPaymentMethodDetail(),
+                    objectMapper.writeValueAsString(request.getPaymentMethodDetail()),
                     request.getPaymentGateway()
             );
 
@@ -89,7 +92,7 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception e) {
             log.error("결제 생성 중 오류 발생", e);
             if (e instanceof PaymentException) {
-                throw e;
+                throw (PaymentException) e;
             }
             throw new PaymentException(PaymentErrorCode.PAYMENT_PROCESSING_ERROR);
         }
@@ -164,7 +167,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse completePayment(UUID paymentId, PaymentCompleteRequest request) {
-        log.info("결제 완료 처리: paymentId={}, approvalNumber={}", paymentId, request.getApprovalNumber());
+        log.info("결제 완료 처리: paymentId={}, paymentKey={}", paymentId, request.getPaymentKey());
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> {
@@ -178,9 +181,17 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // 실제 게이트웨이에 승인 요청하고 결과 받기
-            PaymentCompleteRequest actualResult = paymentGatewayService.approvePayment(
-                    payment.getPaymentKey(), payment.getAmount());
+            ObjectMapper objectMapper = new ObjectMapper();
+            // 토스페이먼츠 결제 승인 요청
+            PaymentCompleteRequest actualResult;
+
+            if (request.getPaymentKey() != null) {
+                actualResult = paymentGatewayService.approvePayment(
+                        request.getPaymentKey(), payment.getAmount());
+            } else {
+                // 기존 로직 유지
+                actualResult = request;
+            }
 
             payment.completePayment(
                     actualResult.getApprovalNumber(),
@@ -226,6 +237,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             // TODO: 게이트웨이 연동 시 실제 취소 요청
             if (payment.getStatus() == PaymentStatus.COMPLETED && payment.getPaymentKey() != null) {
                 boolean cancelResult = paymentGatewayService.cancelPayment(
@@ -275,6 +287,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
+            ObjectMapper objectMapper = new ObjectMapper();
             if (payment.getPaymentKey() != null) {
                 boolean refundResult = paymentGatewayService.refundPayment(
                         payment.getPaymentKey(), request);
