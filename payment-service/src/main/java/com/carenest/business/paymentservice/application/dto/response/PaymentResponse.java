@@ -119,4 +119,15 @@ public class PaymentResponse {
         // TODO: JSON에서 카드번호 파싱 구현하기
         return "3456";
     }
+
+    public Map<String, Object> getPaymentGatewayInfo() {
+        Map<String, Object> gatewayInfo = new HashMap<>();
+        gatewayInfo.put("paymentId", this.paymentId);
+        gatewayInfo.put("amount", this.amount);
+        gatewayInfo.put("orderId", "CARENEST-" + this.reservationId.toString().substring(0, 8));
+        gatewayInfo.put("orderName", "CareNest 간병 서비스 예약");
+        gatewayInfo.put("successUrl", "http://localhost:9040/api/v1/payments/toss/success");
+        gatewayInfo.put("failUrl", "http://localhost:9040/api/v1/payments/toss/fail");
+        return gatewayInfo;
+    }
 }
