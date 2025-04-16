@@ -2,11 +2,14 @@ package com.carenest.business.userservice.application.service;
 
 import java.util.UUID;
 
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 import com.carenest.business.common.model.UserRole;
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
 import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
+import com.carenest.business.userservice.domain.exception.UserErrorCode;
 import com.carenest.business.userservice.domain.model.User;
 import com.carenest.business.userservice.domain.repository.UserRepository;
 import com.carenest.business.userservice.infrastructure.security.JwtUtil;
@@ -29,12 +32,12 @@ public class UserService {
     public SignupResponseDTO signup(SignupRequestDTO request) {
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new BaseException(UserErrorCode.DUPLICATED_EMAIL);
         }
 
         // 아이디 중복 확인
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            throw new BaseException(UserErrorCode.DUPLICATED_USERNAME);
         }
 
         // 비밀번호 암호화
@@ -60,11 +63,11 @@ public class UserService {
     public LoginResponseDTO login(LoginRequestDTO request, HttpServletResponse response) {
         // 사용자명으로 사용자 찾기
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자명입니다."));
+                .orElseThrow(() -> new BaseException(UserErrorCode.USERNAME_NOT_FOUND));
 
         // 비밀번호 일치 확인 (암호화된 비밀번호 비교)
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new BaseException(UserErrorCode.INVALID_PASSWORD);
         }
 
         // JWT 생성
@@ -88,7 +91,7 @@ public class UserService {
     public UserInfoResponseDTO getMyInfo(AuthUserInfo authUserInfo) {
 
         User user = userRepository.findById(authUserInfo.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
         return UserInfoResponseDTO.from(user);
     }
@@ -99,7 +102,7 @@ public class UserService {
                                                UpdateUserRequestDTO request) {
 
         User user = userRepository.findById(authUserInfo.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
         User updated = user.toBuilder()
                 .nickname(request.getNickname() != null ? request.getNickname() : user.getNickname())
@@ -125,7 +128,7 @@ public class UserService {
 //        String currentUsername = "현재_로그인한_사용자"; // 예시
 //
 //        User user = userRepository.findByUsername(currentUsername)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+//                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 //
 //        // 소프트 딜리트 처리
 //        // 실제 구현 시 User 클래스에 deactivate 메서드 추가 필요
