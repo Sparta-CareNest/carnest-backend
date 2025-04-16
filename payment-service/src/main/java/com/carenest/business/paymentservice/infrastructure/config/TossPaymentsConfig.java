@@ -14,7 +14,6 @@ public class TossPaymentsConfig {
     private String failUrl;
     private String clientKey;
     private String secretKey;
-    private String apiKey;
-    private String apiUrl;
     private String apiVersion;
+    private String apiBaseUrl = "https://api.tosspayments.com/v1";
 }
