@@ -1,0 +1,10 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: ai-service
+  profiles:
+    active: local
+  config:
+    import: optional:configserver:http://localhost:8888
