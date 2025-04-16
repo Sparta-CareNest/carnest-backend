@@ -33,7 +33,7 @@ public class Payment {
     @Column(name = "payment_method", length = 20, nullable = false)
     private String paymentMethod;
 
-    @Column(name = "payment_method_detail", columnDefinition = "json")
+    @Column(name = "payment_method_detail", columnDefinition = "text")
     private String paymentMethodDetail;
 
     @Enumerated(EnumType.STRING)
