@@ -97,6 +97,11 @@ public class CaregiverDomainServiceImpl implements CaregiverDomainService {
 	}
 
 	@Override
+	public void updateCaregiverRating(Caregiver caregiver, Double rating) {
+		caregiver.updateRating(rating);
+	}
+
+	@Override
 	public void deleteCaregiverWithAssociations(UUID caregiverId, Caregiver caregiver) {
 		caregiver.clearCategoryServices();
 		caregiver.clearCategoryLocation();

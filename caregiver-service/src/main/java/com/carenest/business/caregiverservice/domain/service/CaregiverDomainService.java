@@ -20,4 +20,6 @@ public interface CaregiverDomainService {
 		List<CategoryLocation> categoryLocations);
 
 	void caregiverApprovalStatusCheck(Caregiver caregiver, boolean check);
+
+	void updateCaregiverRating(Caregiver caregiver, Double rating);
 }
