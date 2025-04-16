@@ -8,11 +8,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CaregiverRatingProducer {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    private static final String TOPIC = "caregiver-rating-updated";
-
-    public void sendRatingUpdateMessage(String caregiverId) {
-        kafkaTemplate.send(TOPIC, caregiverId);
+    public void sendRatingUpdateMessage(Object message) {
+        kafkaTemplate.send(KafkaTopic.REVIEW_RATING_UPDATE.getTopicName(), message);
     }
 }

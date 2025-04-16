@@ -1,5 +1,6 @@
 package com.carenest.business.reviewservice.application.service;
 
+import com.carenest.business.common.event.review.CaregiverRatingMessage;
 import com.carenest.business.common.exception.BaseException;
 import com.carenest.business.common.exception.CommonErrorCode;
 import com.carenest.business.reviewservice.application.dto.response.*;
@@ -13,7 +14,9 @@ import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
 import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
 import com.carenest.business.reviewservice.infrastructure.client.UserInternalClient;
+import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingMessage;
 import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingProducer;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +61,7 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         // kafka 메세지 발행
-        // caregiverRatingProducer.sendRatingUpdateMessage(requestDto.getCaregiverId().toString());
+        caregiverRatingProducer.sendRatingUpdateMessage(new CaregiverRatingMessage(requestDto.getCaregiverId().toString(), requestDto.getRating()));
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
     }
