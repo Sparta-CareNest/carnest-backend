@@ -10,6 +10,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -34,22 +35,12 @@ public class ReservationEventProducer {
                 .cancelReason(reservation.getCancelReason())
                 .build();
 
-        String key = reservation.getReservationId().toString();
-
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(
-                KafkaTopic.RESERVATION_CANCELLED.getTopicName(), key, event);
-
-        future.whenComplete((result, ex) -> {
-            if (ex == null) {
-                log.info("예약 취소 이벤트 발행 성공: reservationId={}", reservation.getReservationId());
-                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
-                        result.getRecordMetadata().topic(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-            } else {
-                log.error("예약 취소 이벤트 발행 실패: reservationId={}", reservation.getReservationId(), ex);
-            }
-        });
+        sendKafkaMessage(
+                KafkaTopic.RESERVATION_CANCELLED.getTopicName(),
+                reservation.getReservationId(),
+                event,
+                "예약 취소 이벤트"
+        );
     }
 
     public void sendReservationStatusChangedEvent(Reservation reservation, ReservationStatus previousStatus) {
@@ -62,20 +53,28 @@ public class ReservationEventProducer {
                 .reason(getStatusChangeReason(reservation, previousStatus))
                 .build();
 
-        String key = reservation.getReservationId().toString();
+        sendKafkaMessage(
+                KafkaTopic.RESERVATION_STATUS_CHANGED.getTopicName(),
+                reservation.getReservationId(),
+                event,
+                String.format("예약 상태 변경 이벤트 (%s→%s)", previousStatus, reservation.getStatus())
+        );
+    }
 
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(
-                KafkaTopic.RESERVATION_STATUS_CHANGED.getTopicName(), key, event);
+    private <T> void sendKafkaMessage(String topic, UUID id, T payload, String eventType) {
+        String key = id.toString();
+
+        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, payload);
 
         future.whenComplete((result, ex) -> {
             if (ex == null) {
-                log.info("예약 상태 변경 이벤트 발행 성공: reservationId={}, {}({}→{})",
-                        reservation.getReservationId(),
-                        event.getReason(),
-                        previousStatus,
-                        reservation.getStatus());
+                log.info("{} 발행 성공: id={}", eventType, id);
+                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
+                        result.getRecordMetadata().topic(),
+                        result.getRecordMetadata().partition(),
+                        result.getRecordMetadata().offset());
             } else {
-                log.error("예약 상태 변경 이벤트 발행 실패: reservationId={}", reservation.getReservationId(), ex);
+                log.error("{} 발행 실패: id={}", eventType, id, ex);
             }
         });
     }
