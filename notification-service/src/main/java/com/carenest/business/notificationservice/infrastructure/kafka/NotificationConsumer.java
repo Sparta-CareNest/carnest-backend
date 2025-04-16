@@ -20,8 +20,11 @@ public class NotificationConsumer {
     public void handleReservationCreated(ReservationCreatedEvent event) {
         log.info("예약 생성 알림 수신: {}", event);
 
+        String content = "새 예약이 생성되었습니다. 예약 ID: " + event.getReservationId() +
+                ", 사용자 ID: " + event.getUserId() + ", 예약 시간: " + event.getReservationTime();
+
         notificationService.createNotificationWithType(
-                new NotificationCreateRequestDto(event.getUserId(), null),
+                new NotificationCreateRequestDto(event.getUserId(), content),
                 NotificationType.RESERVATION_CREATED
         );
     }
@@ -30,8 +33,12 @@ public class NotificationConsumer {
     public void handlePaymentCompleted(PaymentCompletedEvent event) {
         log.info("결제 완료 알림 수신: {}", event);
 
+        String content = "결제가 완료되었습니다. 결제 ID: " + event.getPaymentId() +
+                ", 사용자 ID: " + event.getUserId() + ", 결제 금액: " + event.getAmount() +
+                ", 결제 일시: " + event.getPaidAt();
+
         notificationService.createNotificationWithType(
-                new NotificationCreateRequestDto(event.getUserId(), null),
+                new NotificationCreateRequestDto(event.getUserId(), content),
                 NotificationType.PAYMENT_SUCCESS
         );
     }
