@@ -176,23 +176,4 @@ public class ReviewService {
                 .limit(10)
                 .toList();
     }
-
-    // 간병인 Id를 파라미터로 받아서 리뷰 조회 후 평점 반환
-    @Transactional(readOnly = true)
-    public CaregiverRatingDto calculateAverageRating(UUID caregiverId) {
-        List<Review> reviews = reviewRepository.findAllByCaregiverId(caregiverId);
-
-        if (reviews.isEmpty()) {
-            return new CaregiverRatingDto(caregiverId, 0.0, 0L);
-        }
-
-        double average = reviews.stream()
-                .mapToDouble(Review::getRating)
-                .average()
-                .orElse(0.0);
-
-        long reviewCount = reviews.size();
-
-        return new CaregiverRatingDto(caregiverId, average, reviewCount);
-    }
 }

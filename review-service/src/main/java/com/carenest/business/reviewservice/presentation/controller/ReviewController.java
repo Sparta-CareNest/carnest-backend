@@ -79,12 +79,5 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getTop10Caregivers());
     }
 
-    // 간병인 Id를 파라미터로 받아서 리뷰 조회 후 평점 반환
-    @GetMapping("/ratings/calculate")
-    public ResponseDto<CaregiverRatingDto> calculateRating(@RequestParam UUID caregiverId) {
-        CaregiverRatingDto rating = reviewService.calculateAverageRating(caregiverId);
-        return ResponseDto.success("실시간 평균 평점 조회 성공", rating);
-    }
-
 
 }
