@@ -23,3 +23,12 @@ spring:
         spring.json.trusted.packages: com.carenest.business.common.event
     listener:
       ack-mode: MANUAL_IMMEDIATE
+
+toss:
+  payments:
+    client-key: ${TOSS_CLIENT_KEY:test}
+    secret-key: ${TOSS_SECRET_KEY:test}
+    api-version: ${TOSS_API_VERSION:2022-11-16}
+    api-base-url: https://api.tosspayments.com/v1
+    success-url: ${TOSS_SUCCESS_URL:http://localhost:9040/api/v1/payments/toss/success}
+    fail-url: ${TOSS_FAIL_URL:http://localhost:9040/api/v1/payments/toss/fail}
