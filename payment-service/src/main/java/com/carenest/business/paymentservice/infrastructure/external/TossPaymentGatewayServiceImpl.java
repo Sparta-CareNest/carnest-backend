@@ -46,6 +46,9 @@ public class TossPaymentGatewayServiceImpl implements PaymentGatewayService {
     @Value("${toss.payments.fail-url}")
     private String failUrl;
 
+    @Value("${toss.payments.client-key}")
+    private String clientKey;
+
     @Override
     public Map<String, Object> preparePayment(UUID reservationId, BigDecimal amount, String paymentMethod) {
         log.info("토스페이먼츠 결제 준비 요청: reservationId={}, amount={}, method={}", reservationId, amount, paymentMethod);
@@ -60,11 +63,11 @@ public class TossPaymentGatewayServiceImpl implements PaymentGatewayService {
             result.put("amount", amount);
             result.put("orderId", orderId);
             result.put("orderName", "CareNest 간병 서비스 예약");
-            result.put("customerName", "보호자");  // TODO: 사용자 정보 사용
-            result.put("successUrl", successUrl);
+            result.put("customerName", "보호자");
+            result.put("successUrl", successUrl + "?paymentId=" + reservationId);
             result.put("failUrl", failUrl);
             result.put("method", convertPaymentMethod(paymentMethod));
-            result.put("clientKey", System.getenv("TOSS_CLIENT_KEY"));
+            result.put("clientKey", clientKey);
 
             // 클라이언트에서 토스페이먼츠 결제창을 띄울 때 필요한 URL
             result.put("tossPaymentsUrl", "https://js.tosspayments.com/v1");
@@ -89,7 +92,8 @@ public class TossPaymentGatewayServiceImpl implements PaymentGatewayService {
             HttpHeaders headers = createHeaders();
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("amount", amount);
+            // amount는 BigDecimal이므로 정수형으로 변환
+            requestBody.put("amount", amount.intValue());
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
 
