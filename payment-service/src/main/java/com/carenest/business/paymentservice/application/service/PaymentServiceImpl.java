@@ -588,7 +588,7 @@ public class PaymentServiceImpl implements PaymentService {
             return userInternalClient.getUserDetails(userId);
         } catch (Exception e) {
             log.warn("사용자 정보 조회 실패: userId={}, error={}", userId, e.getMessage());
-            return new UserDetailsResponseDto(userId, "알 수 없음", "사용자", "이메일 없음", "전화번호 없음");
+            return new UserDetailsResponseDto(userId, "알 수 없음", "사용자", "이메일 없음", "알 수 없음", "전화번호 없음");
         }
     }
 

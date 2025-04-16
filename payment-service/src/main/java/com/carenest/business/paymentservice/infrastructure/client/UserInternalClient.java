@@ -24,10 +24,10 @@ public interface UserInternalClient {
                 return response.getData();
             }
             // 값이 없는 경우 기본 정보 반환
-            return new UserDetailsResponseDto(userId, "사용자", "이름 없음", "이메일 없음", "전화번호 없음");
+            return new UserDetailsResponseDto(userId, "알 수 없음", "사용자", "이메일 없음", "알 수 없음", "전화번호 없음");
         } catch (Exception e) {
             // 예외 발생 시 기본 정보 반환
-            return new UserDetailsResponseDto(userId, "사용자", "이름 없음", "이메일 없음", "전화번호 없음");
+            return new UserDetailsResponseDto(userId, "알 수 없음", "사용자", "이메일 없음", "알 수 없음", "전화번호 없음");
         }
     }
 }
