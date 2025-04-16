@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface ReservationService {
-    ReservationResponse createReservation(ReservationCreateRequest request);
+    ReservationResponse createReservation(ReservationCreateRequest request, UUID guardianId);
 
     ReservationResponse getReservation(UUID reservationId);
 
