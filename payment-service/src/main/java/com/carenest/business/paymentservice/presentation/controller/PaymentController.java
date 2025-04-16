@@ -34,6 +34,7 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final TossPaymentsConfig tossConfig;
 
+    // 결제 생성
     @PostMapping("/payments")
     public ResponseDto<PaymentResponse> createPayment(
             @AuthUser AuthUserInfo authUserInfo,
@@ -44,6 +45,7 @@ public class PaymentController {
         return ResponseDto.success("결제가 성공적으로 처리되었습니다.", response);
     }
 
+    // 결제 상세 조회 API
     @GetMapping("/payments/{paymentId}")
     public ResponseDto<PaymentResponse> getPayment(
             @AuthUser AuthUserInfo authUserInfo,
@@ -61,6 +63,7 @@ public class PaymentController {
         return ResponseDto.success("결제 상세 정보 조회 성공", payment);
     }
 
+    // 예약 ID로 결제 조회
     @GetMapping("/reservations/{reservationId}/payment")
     public ResponseDto<PaymentResponse> getPaymentByReservation(
             @AuthUser AuthUserInfo authUserInfo,
@@ -78,6 +81,7 @@ public class PaymentController {
         return ResponseDto.success("예약에 대한 결제 정보 조회 성공", payment);
     }
 
+    // 관리자용 전체 결제 내역 조회
     @GetMapping("/admin/payments")
     public ResponseDto<Page<PaymentListResponse>> getPaymentsAdmin(
             @AuthUser AuthUserInfo authUserInfo,
@@ -94,6 +98,7 @@ public class PaymentController {
         return ResponseDto.success("결제 내역 조회 성공", responses);
     }
 
+    // 내 결제 내역 조회
     @GetMapping("/my/payments")
     public ResponseDto<Page<PaymentListResponse>> getMyPayments(
             @AuthUser AuthUserInfo authUserInfo,
@@ -108,6 +113,7 @@ public class PaymentController {
         return ResponseDto.success("내 결제 내역 조회 성공", responses);
     }
 
+    // 결제 완료 처리
     @PatchMapping("/payments/{paymentId}/complete")
     public ResponseDto<PaymentResponse> completePayment(
             @AuthUser AuthUserInfo authUserInfo,
@@ -126,6 +132,7 @@ public class PaymentController {
         return ResponseDto.success("결제가 성공적으로 완료되었습니다.", response);
     }
 
+    // 결제 취소
     @PatchMapping("/payments/{paymentId}/cancel")
     public ResponseDto<PaymentResponse> cancelPayment(
             @AuthUser AuthUserInfo authUserInfo,
@@ -144,6 +151,7 @@ public class PaymentController {
         return ResponseDto.success("결제 취소가 접수되었습니다.", response);
     }
 
+    // 결제 환불
     @PatchMapping("/payments/{paymentId}/refund")
     public ResponseDto<PaymentResponse> refundPayment(
             @AuthUser AuthUserInfo authUserInfo,
@@ -162,6 +170,7 @@ public class PaymentController {
         return ResponseDto.success("환불이 성공적으로 처리되었습니다.", response);
     }
 
+    // 결제 이력 조회
     @GetMapping("/payments/{paymentId}/history")
     public ResponseDto<Page<PaymentHistoryResponse>> getPaymentHistory(
             @AuthUser AuthUserInfo authUserInfo,
@@ -181,6 +190,7 @@ public class PaymentController {
         return ResponseDto.success("결제 이력 조회 성공", responses);
     }
 
+    // 관리자용 전체 결제 이력 조회
     @GetMapping("/admin/payments/history")
     public ResponseDto<Page<PaymentHistoryDetailResponse>> getAllPaymentHistory(
             @AuthUser AuthUserInfo authUserInfo,
@@ -197,6 +207,7 @@ public class PaymentController {
         return ResponseDto.success("결제 이력 조회 성공", responses);
     }
 
+    // 내 결제 이력 조회
     @GetMapping("/my/payments/history")
     public ResponseDto<Page<PaymentHistoryDetailResponse>> getMyPaymentHistory(
             @AuthUser AuthUserInfo authUserInfo,
@@ -211,12 +222,18 @@ public class PaymentController {
         return ResponseDto.success("내 결제 이력 조회 성공", responses);
     }
 
+    // 토스페이먼츠 결제 준비
     @PostMapping("/payments/prepare-toss")
     public ResponseDto<Map<String, Object>> prepareTossPayment(
             @AuthUser AuthUserInfo authUserInfo,
             @RequestBody PaymentCreateRequest request) {
 
         PaymentResponse response = paymentService.createPayment(request, authUserInfo.getUserId());
+
+        // 토스페이먼츠 결제 정보가 있으면 그대로 반환
+        if (response.getTossPaymentsInfo() != null) {
+            return ResponseDto.success("토스페이먼츠 결제 준비 정보", response.getTossPaymentsInfo());
+        }
 
         // 토스페이먼츠에 필요한 결제 정보 구성
         Map<String, Object> tossPaymentInfo = new HashMap<>();
@@ -227,10 +244,12 @@ public class PaymentController {
         tossPaymentInfo.put("successUrl", tossConfig.getSuccessUrl() + "?paymentId=" + response.getPaymentId());
         tossPaymentInfo.put("failUrl", tossConfig.getFailUrl());
         tossPaymentInfo.put("paymentId", response.getPaymentId());
+        tossPaymentInfo.put("clientKey", tossConfig.getClientKey());
 
         return ResponseDto.success("토스페이먼츠 결제 준비 정보", tossPaymentInfo);
     }
 
+    // 토스페이먼츠 결제 위젯 정보 조회
     @GetMapping("/payments/{paymentId}/pay-with-toss")
     public ResponseDto<Map<String, Object>> getPayWithTossInfo(
             @AuthUser AuthUserInfo authUserInfo,
@@ -254,8 +273,16 @@ public class PaymentController {
         tossPaymentInfo.put("successUrl", tossConfig.getSuccessUrl() + "?paymentId=" + payment.getPaymentId());
         tossPaymentInfo.put("failUrl", tossConfig.getFailUrl());
         tossPaymentInfo.put("paymentId", payment.getPaymentId());
-        tossPaymentInfo.put("clientKey", System.getenv("TOSS_CLIENT_KEY"));
+        tossPaymentInfo.put("clientKey", tossConfig.getClientKey());
 
         return ResponseDto.success("토스페이먼츠 결제 정보", tossPaymentInfo);
+    }
+
+    // 토스페이먼츠 클라이언트 키 정보 제공
+    @GetMapping("/payments/toss/client-key")
+    public ResponseDto<Map<String, String>> getTossClientKey() {
+        return ResponseDto.success("토스페이먼츠 클라이언트 키", Map.of(
+                "clientKey", tossConfig.getClientKey()
+        ));
     }
 }
