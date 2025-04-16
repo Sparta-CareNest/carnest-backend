@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -21,8 +22,25 @@ public class ReservationEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void sendReservationCancelledEvent(Reservation reservation) {
+        if (reservation == null) {
+            log.error("예약 취소 이벤트 발행 실패: reservation 객체가 null입니다");
+            return;
+        }
+
+        if (reservation.getReservationId() == null) {
+            log.error("예약 취소 이벤트 발행 실패: reservationId가 null입니다");
+            return;
+        }
+
         if (reservation.getPaymentId() == null) {
             log.warn("예약 취소 이벤트 발행 생략: 결제 정보 없음 (reservationId={})", reservation.getReservationId());
+            return;
+        }
+
+        if (reservation.getGuardianId() == null || reservation.getCaregiverId() == null ||
+                reservation.getTotalAmount() == null) {
+            log.error("예약 취소 이벤트 발행 실패: 필수 필드가 null입니다 (reservationId={})",
+                    reservation.getReservationId());
             return;
         }
 
@@ -32,7 +50,8 @@ public class ReservationEventProducer {
                 .caregiverId(reservation.getCaregiverId())
                 .paymentId(reservation.getPaymentId())
                 .amount(reservation.getTotalAmount())
-                .cancelReason(reservation.getCancelReason())
+                .cancelReason(reservation.getCancelReason() != null ?
+                        reservation.getCancelReason() : "취소 사유 없음")
                 .build();
 
         sendKafkaMessage(
@@ -44,6 +63,28 @@ public class ReservationEventProducer {
     }
 
     public void sendReservationStatusChangedEvent(Reservation reservation, ReservationStatus previousStatus) {
+        if (reservation == null) {
+            log.error("예약 상태 변경 이벤트 발행 실패: reservation 객체가 null입니다");
+            return;
+        }
+
+        if (reservation.getReservationId() == null) {
+            log.error("예약 상태 변경 이벤트 발행 실패: reservationId가 null입니다");
+            return;
+        }
+
+        if (reservation.getStatus() == null || previousStatus == null) {
+            log.error("예약 상태 변경 이벤트 발행 실패: 현재 상태 또는 이전 상태가 null입니다 (reservationId={})",
+                    reservation.getReservationId());
+            return;
+        }
+
+        if (reservation.getGuardianId() == null || reservation.getCaregiverId() == null) {
+            log.error("예약 상태 변경 이벤트 발행 실패: 필수 필드가 null입니다 (reservationId={})",
+                    reservation.getReservationId());
+            return;
+        }
+
         ReservationStatusChangedEvent event = ReservationStatusChangedEvent.builder()
                 .reservationId(reservation.getReservationId())
                 .guardianId(reservation.getGuardianId())
@@ -62,6 +103,10 @@ public class ReservationEventProducer {
     }
 
     private <T> void sendKafkaMessage(String topic, UUID id, T payload, String eventType) {
+        Assert.notNull(topic, "토픽은 null일 수 없습니다");
+        Assert.notNull(id, "ID는 null일 수 없습니다");
+        Assert.notNull(payload, "Payload는 null일 수 없습니다");
+
         String key = id.toString();
 
         CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, payload);
@@ -80,15 +125,21 @@ public class ReservationEventProducer {
     }
 
     private String getStatusChangeReason(Reservation reservation, ReservationStatus previousStatus) {
+        if (reservation.getStatus() == null) {
+            return "알 수 없는 상태 변경";
+        }
+
         switch (reservation.getStatus()) {
             case PENDING_ACCEPTANCE:
                 return "결제 완료";
             case CONFIRMED:
                 return "간병인 수락";
             case REJECTED:
-                return reservation.getRejectionReason();
+                return reservation.getRejectionReason() != null ?
+                        reservation.getRejectionReason() : "거절 사유 없음";
             case CANCELLED:
-                return reservation.getCancelReason();
+                return reservation.getCancelReason() != null ?
+                        reservation.getCancelReason() : "취소 사유 없음";
             case COMPLETED:
                 return "서비스 완료";
             default:
