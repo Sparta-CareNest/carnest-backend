@@ -15,7 +15,7 @@ import com.carenest.business.paymentservice.exception.*;
 import com.carenest.business.paymentservice.infrastructure.client.ReservationInternalClient;
 import com.carenest.business.paymentservice.infrastructure.client.UserInternalClient;
 import com.carenest.business.paymentservice.infrastructure.client.dto.response.ReservationDetailsResponseDto;
-import com.carenest.business.paymentservice.infrastructure.client.dto.response.UserDetailsResponseDto;
+import com.carenest.business.paymentservice.infrastructure.client.dto.response.UserInfoResponseDTO;
 import com.carenest.business.paymentservice.infrastructure.external.PaymentGatewayService;
 import com.carenest.business.paymentservice.infrastructure.kafka.PaymentEventProducer;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentHistoryRepository;
@@ -90,8 +90,8 @@ public class PaymentServiceImpl implements PaymentService {
 
             log.info("결제 생성 완료: paymentId={}", savedPayment.getPaymentId());
 
-            UserDetailsResponseDto guardianDetails = getUserDetails(guardianId);
-            UserDetailsResponseDto caregiverDetails = getUserDetails(request.getCaregiverId());
+            UserInfoResponseDTO guardianDetails = getUserDetails(guardianId);
+            UserInfoResponseDTO caregiverDetails = getUserDetails(request.getCaregiverId());
             ReservationDetailsResponseDto reservationDetails = getReservationDetails(request.getReservationId());
 
             PaymentResponse response = new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
@@ -118,8 +118,8 @@ public class PaymentServiceImpl implements PaymentService {
                     return new PaymentNotFoundException();
                 });
 
-        UserDetailsResponseDto guardianDetails = getUserDetails(payment.getGuardianId());
-        UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+        UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+        UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
         ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
         return new PaymentResponse(payment, guardianDetails, caregiverDetails, reservationDetails);
@@ -136,8 +136,8 @@ public class PaymentServiceImpl implements PaymentService {
                     return new PaymentNotFoundException();
                 });
 
-        UserDetailsResponseDto guardianDetails = getUserDetails(payment.getGuardianId());
-        UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+        UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+        UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
         ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
         return new PaymentResponse(payment, guardianDetails, caregiverDetails, reservationDetails);
@@ -160,7 +160,7 @@ public class PaymentServiceImpl implements PaymentService {
             // 사용자 및 예약 정보 설정
             try {
                 ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
-                UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+                UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
 
                 response.setCaregiverName(caregiverDetails.getName());
                 if (reservationDetails != null) {
@@ -248,8 +248,8 @@ public class PaymentServiceImpl implements PaymentService {
 
             log.info("결제 완료 처리 성공: paymentId={}", paymentId);
 
-            UserDetailsResponseDto guardianDetails = getUserDetails(payment.getGuardianId());
-            UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+            UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+            UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
             ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
             return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
@@ -303,8 +303,8 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("결제 취소 완료: paymentId={}", paymentId);
 
             // 사용자 및 예약 정보 조회
-            UserDetailsResponseDto guardianDetails = getUserDetails(payment.getGuardianId());
-            UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+            UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+            UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
             ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
             return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
@@ -363,8 +363,8 @@ public class PaymentServiceImpl implements PaymentService {
 
             log.info("결제 환불 완료: paymentId={}", paymentId);
 
-            UserDetailsResponseDto guardianDetails = getUserDetails(payment.getGuardianId());
-            UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+            UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+            UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
             ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
             return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
@@ -408,12 +408,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         if (payment != null) {
             try {
-                UserDetailsResponseDto guardianDetails = getUserDetails(payment.getGuardianId());
+                UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
                 if (guardianDetails != null) {
                     guardianName = guardianDetails.getName();
                 }
 
-                UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+                UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
                 if (caregiverDetails != null) {
                     caregiverName = caregiverDetails.getName();
                 }
@@ -472,7 +472,7 @@ public class PaymentServiceImpl implements PaymentService {
 
                 // 사용자 및 예약 정보 설정
                 try {
-                    UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+                    UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
                     ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
                     if (caregiverDetails != null) {
@@ -530,7 +530,7 @@ public class PaymentServiceImpl implements PaymentService {
 
                 // 사용자 및 예약 정보 설정
                 try {
-                    UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+                    UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
                     ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
                     if (caregiverDetails != null) {
@@ -561,7 +561,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             // 사용자 및 예약 정보 설정
             try {
-                UserDetailsResponseDto caregiverDetails = getUserDetails(payment.getCaregiverId());
+                UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
                 ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
 
                 if (caregiverDetails != null) {
@@ -582,13 +582,13 @@ public class PaymentServiceImpl implements PaymentService {
         });
     }
 
-    private UserDetailsResponseDto getUserDetails(UUID userId) {
+    private UserInfoResponseDTO getUserDetails(UUID userId) {
         try {
             // userInternalClient를 통해 사용자 정보 조회
             return userInternalClient.getUserDetails(userId);
         } catch (Exception e) {
             log.warn("사용자 정보 조회 실패: userId={}, error={}", userId, e.getMessage());
-            return new UserDetailsResponseDto(userId, "알 수 없음", "사용자", "이메일 없음", "알 수 없음", "전화번호 없음");
+            return new UserInfoResponseDTO(userId, "알 수 없음", "사용자", "이메일 없음", "알 수 없음", "전화번호 없음");
         }
     }
 

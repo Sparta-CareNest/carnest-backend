@@ -3,7 +3,7 @@ package com.carenest.business.paymentservice.application.dto.response;
 import com.carenest.business.paymentservice.domain.model.Payment;
 import com.carenest.business.paymentservice.domain.model.PaymentStatus;
 import com.carenest.business.paymentservice.infrastructure.client.dto.response.ReservationDetailsResponseDto;
-import com.carenest.business.paymentservice.infrastructure.client.dto.response.UserDetailsResponseDto;
+import com.carenest.business.paymentservice.infrastructure.client.dto.response.UserInfoResponseDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -65,8 +65,8 @@ public class PaymentResponse {
     }
 
     public PaymentResponse(Payment payment,
-                           UserDetailsResponseDto guardianDetails,
-                           UserDetailsResponseDto caregiverDetails,
+                           UserInfoResponseDTO guardianDetails,
+                           UserInfoResponseDTO caregiverDetails,
                            ReservationDetailsResponseDto reservationDetails) {
         this.paymentId = payment.getPaymentId();
         this.reservationId = payment.getReservationId();
