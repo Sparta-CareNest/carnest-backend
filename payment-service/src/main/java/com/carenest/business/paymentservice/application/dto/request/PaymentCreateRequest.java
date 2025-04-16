@@ -10,7 +10,7 @@ import java.util.UUID;
 @Setter
 public class PaymentCreateRequest {
     private UUID reservationId;
-    private UUID guardianId;
+    // guardianId 필드 제거 - 토큰에서 추출한 사용자 ID 사용
     private UUID caregiverId;
     private BigDecimal amount;
     private String paymentMethod;

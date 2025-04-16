@@ -13,6 +13,7 @@ import com.carenest.business.paymentservice.domain.model.PaymentStatus;
 import com.carenest.business.paymentservice.domain.service.PaymentDomainService;
 import com.carenest.business.paymentservice.exception.*;
 import com.carenest.business.paymentservice.infrastructure.external.PaymentGatewayService;
+import com.carenest.business.paymentservice.infrastructure.kafka.PaymentEventProducer;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentHistoryRepository;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentRepository;
 import com.carenest.business.paymentservice.infrastructure.service.NotificationService;
@@ -38,10 +39,11 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentDomainService paymentDomainService;
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationService notificationService;
+    private final PaymentEventProducer paymentEventProducer; // Kafka 이벤트 프로듀서 추가
 
     @Override
     @Transactional
-    public PaymentResponse createPayment(PaymentCreateRequest request) {
+    public PaymentResponse createPayment(PaymentCreateRequest request, UUID guardianId) {
         log.info("결제 생성 요청: reservationId={}, amount={}", request.getReservationId(), request.getAmount());
 
         // 동일한 예약에 대해 결제가 이미 존재하는지 확인
@@ -66,7 +68,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             Payment payment = new Payment(
                     request.getReservationId(),
-                    request.getGuardianId(),
+                    guardianId,
                     request.getCaregiverId(),
                     request.getAmount(),
                     request.getPaymentMethod(),
@@ -193,6 +195,9 @@ public class PaymentServiceImpl implements PaymentService {
             // 결제 완료 알림 발송
             notificationService.sendPaymentSuccessNotification(savedPayment);
 
+            // Kafka 이벤트 발행
+            paymentEventProducer.sendPaymentCompletedEvent(savedPayment);
+
             log.info("결제 완료 처리 성공: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);
         } catch (Exception e) {
@@ -238,6 +243,9 @@ public class PaymentServiceImpl implements PaymentService {
 
             // 결제 취소 알림 발송
             notificationService.sendPaymentCancelNotification(savedPayment);
+
+            // Kafka 이벤트 발행
+            paymentEventProducer.sendPaymentCancelledEvent(savedPayment);
 
             log.info("결제 취소 완료: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);
@@ -289,6 +297,9 @@ public class PaymentServiceImpl implements PaymentService {
 
             // 결제 환불 알림 발송
             notificationService.sendPaymentRefundNotification(savedPayment);
+
+            // Kafka 이벤트 발행 (취소와 동일하게 처리)
+            paymentEventProducer.sendPaymentCancelledEvent(savedPayment);
 
             log.info("결제 환불 완료: paymentId={}", paymentId);
             return new PaymentResponse(savedPayment);

@@ -10,6 +10,7 @@ import com.carenest.business.reservationservice.domain.repository.ReservationRep
 import com.carenest.business.reservationservice.domain.service.ReservationDomainService;
 import com.carenest.business.reservationservice.exception.*;
 import com.carenest.business.reservationservice.infrastructure.client.dto.response.CaregiverDetailResponseDto;
+import com.carenest.business.reservationservice.infrastructure.kafka.ReservationEventProducer;
 import com.carenest.business.reservationservice.infrastructure.service.ExternalServiceClient;
 import com.carenest.business.reservationservice.presentation.dto.mapper.ReservationMapper;
 import com.carenest.business.reservationservice.presentation.dto.response.ReservationResponse;
@@ -32,11 +33,12 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationDomainService reservationDomainService;
     private final ReservationMapper reservationMapper;
     private final ExternalServiceClient externalServiceClient;
+    private final ReservationEventProducer reservationEventProducer;
 
     @Override
     @Transactional
-    public ReservationResponse createReservation(ReservationCreateRequest request) {
-        log.info("예약 생성 시작: guardianId={}, caregiverId={}", request.getGuardianId(), request.getCaregiverId());
+    public ReservationResponse createReservation(ReservationCreateRequest request, UUID guardianId) {
+        log.info("예약 생성 시작: guardianId={}, caregiverId={}", guardianId, request.getCaregiverId());
 
         // 간병인 정보를 조회해서 가격 검증
         try {
@@ -48,7 +50,7 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         Reservation reservation = new Reservation(
-                request.getGuardianId(),
+                guardianId,
                 request.getGuardianName(),
                 request.getCaregiverId(),
                 request.getCaregiverName(),
@@ -303,9 +305,13 @@ public class ReservationServiceImpl implements ReservationService {
             throw new CannotRejectReservationException();
         }
 
+        ReservationStatus previousStatus = reservation.getStatus();
         reservation.rejectByCaregiver(rejectionReason);
         reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(reservation);
+
+        // 상태 변경 이벤트 발행
+        reservationEventProducer.sendReservationStatusChangedEvent(reservation, previousStatus);
 
         // 예약 거절 알림 발송
         try {
@@ -343,26 +349,21 @@ public class ReservationServiceImpl implements ReservationService {
             throw new CannotCancelReservationException();
         }
 
+        ReservationStatus previousStatus = reservation.getStatus();
         reservation.cancelByGuardian(cancelReason);
 
-        // 결제 상태 업데이트 및 결제 취소 요청
+        // 저장 전에 Kafka 이벤트 발행 (결제 취소 요청을 위해)
         if (reservation.getPaymentStatus() == PaymentStatus.PAID && reservation.getPaymentId() != null) {
-            log.info("결제 취소 요청: paymentId={}", reservation.getPaymentId());
-            boolean cancelResult = externalServiceClient.cancelPayment(
-                    reservation.getPaymentId(), cancelReason);
-
-            if (cancelResult) {
-                log.info("결제 취소 성공: paymentId={}", reservation.getPaymentId());
-                // 결제 상태 업데이트
-                reservation.setPaymentStatus(PaymentStatus.CANCELLED);
-            } else {
-                log.error("결제 취소 실패: paymentId={}", reservation.getPaymentId());
-                // 취소 실패 시에도 예약은 취소 처리 (TODO: 나중에 관리자가 수동으로 처리)
-            }
+            reservationEventProducer.sendReservationCancelledEvent(reservation);
+            log.info("예약 취소 이벤트 발행: reservationId={}, paymentId={}",
+                    reservation.getReservationId(), reservation.getPaymentId());
         }
 
         reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(reservation);
+
+        // 상태 변경 이벤트 발행
+        reservationEventProducer.sendReservationStatusChangedEvent(reservation, previousStatus);
 
         // 예약 취소 알림 발송
         try {
@@ -462,9 +463,13 @@ public class ReservationServiceImpl implements ReservationService {
             throw new InvalidReservationStatusException();
         }
 
+        ReservationStatus previousStatus = reservation.getStatus();
         reservation.completeService();
         reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(reservation);
+
+        // 상태 변경 이벤트 발행
+        reservationEventProducer.sendReservationStatusChangedEvent(reservation, previousStatus);
 
         // 예약 완료 알림 발송
         try {
@@ -506,11 +511,15 @@ public class ReservationServiceImpl implements ReservationService {
             throw new PaymentAlreadyProcessedException();
         }
 
+        ReservationStatus previousStatus = reservation.getStatus();
         reservation.linkPayment(paymentId);
         reservation.changeStatusToPendingAcceptance();
 
         Reservation updatedReservation = reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(updatedReservation);
+
+        // 상태 변경 이벤트 발행
+        reservationEventProducer.sendReservationStatusChangedEvent(updatedReservation, previousStatus);
 
         // 결제 완료 알림 발송
         try {

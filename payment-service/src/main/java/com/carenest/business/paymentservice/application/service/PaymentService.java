@@ -15,7 +15,7 @@ import java.util.UUID;
 
 public interface PaymentService {
 
-    PaymentResponse createPayment(PaymentCreateRequest request);
+    PaymentResponse createPayment(PaymentCreateRequest request, UUID guardianId);
 
     PaymentResponse getPayment(UUID paymentId);
 
