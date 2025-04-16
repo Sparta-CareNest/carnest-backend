@@ -1,12 +1,22 @@
 package com.carenest.business.reviewservice.application.service;
 
-import com.carenest.business.common.event.review.CaregiverRatingMessage;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.carenest.business.common.exception.BaseException;
 import com.carenest.business.common.exception.CommonErrorCode;
-import com.carenest.business.reviewservice.application.dto.response.*;
 import com.carenest.business.reviewservice.application.dto.request.ReviewCreateRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewSearchRequestDto;
 import com.carenest.business.reviewservice.application.dto.request.ReviewUpdateRequestDto;
+import com.carenest.business.reviewservice.application.dto.response.CaregiverRatingDto;
+import com.carenest.business.reviewservice.application.dto.response.CaregiverTopRatingDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewCreateResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewSearchResponseDto;
+import com.carenest.business.reviewservice.application.dto.response.ReviewUpdateResponseDto;
 import com.carenest.business.reviewservice.domain.model.Review;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepository;
 import com.carenest.business.reviewservice.domain.repository.ReviewRepositoryCustom;
@@ -14,17 +24,12 @@ import com.carenest.business.reviewservice.exception.ErrorCode;
 import com.carenest.business.reviewservice.exception.ReviewException;
 import com.carenest.business.reviewservice.infrastructure.client.CaregiverInternalClient;
 import com.carenest.business.reviewservice.infrastructure.client.UserInternalClient;
-import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingMessage;
 import com.carenest.business.reviewservice.infrastructure.kafka.CaregiverRatingProducer;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -58,10 +63,20 @@ public class ReviewService {
                 .content(requestDto.getContent())
                 .build();
 
-        Review savedReview = reviewRepository.save(review);
-
         // kafka 메세지 발행
-        caregiverRatingProducer.sendRatingUpdateMessage(new CaregiverRatingMessage(requestDto.getCaregiverId().toString(), requestDto.getRating()));
+        Review savedReview = reviewRepository.save(review);
+        List<Review> reviews = reviewRepository.findAllByCaregiverId(requestDto.getCaregiverId());
+        double sum = 0.0;
+        for (Review r : reviews) {
+            sum += r.getRating();
+        }
+
+        double average = sum / reviews.size();
+        log.info("sum = {}, reviews.size = {}, average = {}", sum, reviews.size(), average);
+
+
+        // kafka 메시지 발행
+        caregiverRatingProducer.sendReviewUpdateEvent(requestDto.getCaregiverId(), average);
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
     }

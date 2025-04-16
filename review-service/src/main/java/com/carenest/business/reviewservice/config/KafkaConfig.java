@@ -35,7 +35,7 @@ public class KafkaConfig {
     @Bean
     public NewTopic reviewRatingUpdate() {
         return TopicBuilder.name(KafkaTopic.REVIEW_RATING_UPDATE.getTopicName())
-                .partitions(3)
+                .partitions(1)
                 .replicas(1)
                 .build();
     }
