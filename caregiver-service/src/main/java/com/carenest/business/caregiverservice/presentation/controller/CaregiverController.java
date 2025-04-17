@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.BulkCaregiverTop10Response;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
@@ -134,10 +135,10 @@ public class CaregiverController {
 	}
 
 	@GetMapping("/rating/top")
-	public ResponseDto<List<CaregiverGetTop10ResponseDTO>> getTop10Caregiver()
+	public ResponseDto<BulkCaregiverTop10Response> getTop10Caregiver()
 	{
-		List<CaregiverGetTop10ResponseServiceDTO> responseServiceDTO = caregiverService.getTop10Caregiver();
-		return ResponseDto.success(presentationMapper.toGetTop10CaregiverDto(responseServiceDTO));
+		BulkCaregiverTop10Response responseServiceDTO = caregiverService.getTop10Caregiver();
+		return ResponseDto.success(responseServiceDTO);
 	}
 
 
