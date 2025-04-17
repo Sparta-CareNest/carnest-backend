@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +61,7 @@ public class ReservationController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @ModelAttribute ReservationSearchRequest searchRequest,
-            @PageableDefault(size = 10, sort = "createdAt,desc") Pageable pageable) {
+            @PageableDefault(size = 10, sort = {"createdAt"}, direction = Sort.Direction.DESC) Pageable pageable) {
 
         // ADMIN만 전체 예약 목록 조회 가능
         if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
@@ -86,29 +87,28 @@ public class ReservationController {
             }
         }
 
-        // 검색 조건이 있는 경우
-        if (searchRequest.getGuardianId() != null ||
+        // 날짜 설정이 없으면 요청 파라미터의 값 사용
+        if (searchRequest.getStartDate() == null) {
+            searchRequest.setStartDate(startDate);
+        }
+        if (searchRequest.getEndDate() == null) {
+            searchRequest.setEndDate(endDate);
+        }
+
+        // 검색 조건이 있거나 일반 사용자인 경우
+        if (!authUserInfo.getRole().equals(UserRole.ADMIN) ||
+                searchRequest.getGuardianId() != null ||
                 searchRequest.getCaregiverId() != null ||
                 searchRequest.getPatientName() != null ||
-                searchRequest.getStatus() != null) {
-
-            // 날짜 설정이 없으면 요청 파라미터의 값 사용
-            if (searchRequest.getStartDate() == null) {
-                searchRequest.setStartDate(startDate);
-            }
-            if (searchRequest.getEndDate() == null) {
-                searchRequest.setEndDate(endDate);
-            }
+                searchRequest.getStatus() != null ||
+                searchRequest.getStartDate() != null ||
+                searchRequest.getEndDate() != null) {
 
             Page<ReservationResponse> responses = reservationService.searchReservations(searchRequest, pageable);
             return ResponseDto.success("예약 검색 성공", responses);
         }
 
-        // ADMIN만 전체 예약 목록 조회 가능
-        if (!authUserInfo.getRole().equals(UserRole.ADMIN)) {
-            throw new UnauthorizedReservationAccessException();
-        }
-
+        // ADMIN의 전체 예약 목록 조회
         Page<ReservationResponse> responses = reservationService.getReservations(startDate, endDate, pageable);
         return ResponseDto.success("예약 목록 조회 성공", responses);
     }

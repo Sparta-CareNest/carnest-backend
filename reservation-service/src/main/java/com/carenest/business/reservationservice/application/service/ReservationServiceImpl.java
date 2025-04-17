@@ -127,18 +127,30 @@ public class ReservationServiceImpl implements ReservationService {
         log.info("예약 검색 요청: guardianId={}, caregiverId={}, status={}",
                 request.getGuardianId(), request.getCaregiverId(), request.getStatus());
 
-        Page<Reservation> reservations = reservationRepository.findBySearchCriteria(
-                request.getGuardianId(),
-                request.getCaregiverId(),
-                request.getPatientName(),
-                request.getStartDate(),
-                request.getEndDate(),
-                request.getStatus(),
-                pageable
-        );
+        // 기본 날짜 범위 설정
+        LocalDateTime startDate = request.getStartDate() != null ?
+                request.getStartDate() : LocalDateTime.now().minusMonths(1);
+        LocalDateTime endDate = request.getEndDate() != null ?
+                request.getEndDate() : LocalDateTime.now().plusMonths(1);
 
-        log.info("예약 검색 완료: count={}", reservations.getTotalElements());
-        return reservations.map(reservationMapper::toDto);
+        try {
+            Page<Reservation> reservations = reservationRepository.findBySearchCriteria(
+                    request.getGuardianId(),
+                    request.getCaregiverId(),
+                    request.getPatientName(),
+                    startDate,
+                    endDate,
+                    request.getStatus(),
+                    pageable
+            );
+
+            log.info("예약 검색 완료: count={}", reservations.getTotalElements());
+            return reservations.map(reservationMapper::toDto);
+        } catch (Exception e) {
+            log.error("예약 검색 중 오류 발생: {}", e.getMessage(), e);
+            // 오류 발생 시 빈 결과 반환
+            return Page.empty(pageable);
+        }
     }
 
     @Override
