@@ -14,7 +14,8 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class CaregiverConsumerServiceImpl implements CaregiverConsumerService{
+public class CaregiverConsumerServiceImpl implements CaregiverConsumerService {
+
 	private final CaregiverRepository caregiverRepository;
 	private final CaregiverDomainService caregiverDomainService;
 
