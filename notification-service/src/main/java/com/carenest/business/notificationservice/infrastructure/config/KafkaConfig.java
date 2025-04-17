@@ -3,6 +3,7 @@ package com.carenest.business.notificationservice.infrastructure.config;
 import com.carenest.business.common.event.payment.PaymentCancelledEvent;
 import com.carenest.business.common.event.payment.PaymentCompletedEvent;
 import com.carenest.business.common.event.reservation.ReservationCancelledEvent;
+import com.carenest.business.common.event.reservation.ReservationCreatedEvent;
 import com.carenest.business.common.event.reservation.ReservationStatusChangedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -63,6 +64,11 @@ public class KafkaConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, ReservationCancelledEvent> reservationCancelledKafkaListenerContainerFactory() {
         return factory(ReservationCancelledEvent.class);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, ReservationCreatedEvent> reservationCreatedKafkaListenerContainerFactory() {
+        return factory(ReservationCreatedEvent.class);
     }
 
 }
