@@ -1,6 +1,7 @@
 package com.carenest.business.aiservice.presentation.controller;
 
 import com.carenest.business.aiservice.application.service.ReviewTranslationService;
+import com.carenest.business.common.response.ResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,8 +17,8 @@ public class ReviewTranslationController {
     private final ReviewTranslationService translationService;
 
     @PostMapping
-    public ResponseEntity<String> translate(@RequestBody String reviewText) {
+    public ResponseDto<String> translate(@RequestBody String reviewText) {
         String translated = translationService.translateReview(reviewText);
-        return ResponseEntity.ok(translated);
+        return ResponseDto.success("번역이 완료되었습니다.", translated);
     }
 }
