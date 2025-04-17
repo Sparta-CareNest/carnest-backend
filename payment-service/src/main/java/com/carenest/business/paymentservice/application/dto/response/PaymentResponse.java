@@ -2,6 +2,8 @@ package com.carenest.business.paymentservice.application.dto.response;
 
 import com.carenest.business.paymentservice.domain.model.Payment;
 import com.carenest.business.paymentservice.domain.model.PaymentStatus;
+import com.carenest.business.paymentservice.infrastructure.client.dto.response.ReservationDetailsResponseDto;
+import com.carenest.business.paymentservice.infrastructure.client.dto.response.UserInfoResponseDTO;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -54,10 +56,18 @@ public class PaymentResponse {
     private String refundAccountOwner;
 
     private Map<String, Object> refundInfo;
-
     private Map<String, Object> cancellationPolicy;
 
+    private Map<String, Object> tossPaymentsInfo;
+
     public PaymentResponse(Payment payment) {
+        this(payment, null, null, null);
+    }
+
+    public PaymentResponse(Payment payment,
+                           UserInfoResponseDTO guardianDetails,
+                           UserInfoResponseDTO caregiverDetails,
+                           ReservationDetailsResponseDto reservationDetails) {
         this.paymentId = payment.getPaymentId();
         this.reservationId = payment.getReservationId();
         this.guardianId = payment.getGuardianId();
@@ -79,19 +89,20 @@ public class PaymentResponse {
         this.refundedAt = payment.getRefundedAt();
         this.paymentGateway = payment.getPaymentGateway();
         this.paymentKey = payment.getPaymentKey();
-        
+
         if (payment.getStatus() == PaymentStatus.COMPLETED) {
             this.completedAt = payment.getUpdatedAt();
         }
 
-        // TODO: 결제 방식 세부 정보 설정 구현하기(JSON 파싱)
+        // 결제 방식 세부 정보 설정
         this.paymentMethodDetail = new HashMap<>();
-        if (payment.getPaymentMethod().equals("CARD")) {
+        if (payment.getPaymentMethod() != null && payment.getPaymentMethod().equals("CARD")) {
             this.paymentMethodDetail.put("card_number", "--****" + getLastFourDigits(payment.getPaymentMethodDetail()));
             this.paymentMethodDetail.put("card_type", "신용카드");
-            this.paymentMethodDetail.put("issuer", "우리카드"); // 예시 데이터
+            this.paymentMethodDetail.put("issuer", "카드사");
         }
 
+        // 환불 정보 설정
         if (payment.getStatus() == PaymentStatus.CANCELLED || payment.getStatus() == PaymentStatus.REFUNDED) {
             this.refundInfo = new HashMap<>();
             this.refundInfo.put("refund_id", UUID.randomUUID().toString());
@@ -105,18 +116,62 @@ public class PaymentResponse {
             this.cancellationPolicy.put("refund_amount", payment.getRefundAmount() != null ? payment.getRefundAmount() : payment.getAmount());
         }
 
-        // TODO: 다른 서비스에서 정보 가져오기
-        this.guardianName = "보호자 이름";
-        this.caregiverName = "간병인 이름";
-        this.serviceName = "서비스 이름";
-        this.patientName = "환자 이름";
-        this.serviceStartDate = LocalDateTime.now().plusDays(5);
-        this.serviceEndDate = LocalDateTime.now().plusDays(8);
+        // 사용자 및 예약 정보 설정
+        if (guardianDetails != null) {
+            this.guardianName = guardianDetails.getName();
+        }
+
+        if (caregiverDetails != null) {
+            this.caregiverName = caregiverDetails.getName();
+        }
+
+        if (reservationDetails != null) {
+            this.patientName = reservationDetails.getPatientName();
+            this.serviceName = "CareNest " + reservationDetails.getServiceType() + " 서비스";
+            this.serviceStartDate = reservationDetails.getStartedAt();
+            this.serviceEndDate = reservationDetails.getEndedAt();
+        }
     }
 
     // 카드번호 마스킹 메서드
     private String getLastFourDigits(String cardDetails) {
-        // TODO: JSON에서 카드번호 파싱 구현하기
-        return "3456";
+        if (cardDetails == null || cardDetails.isEmpty()) {
+            return "****";
+        }
+
+        try {
+            // JSON에서 카드번호 추출 시도
+            if (cardDetails.contains("cardNumber")) {
+                String[] parts = cardDetails.split("cardNumber\":");
+                if (parts.length > 1) {
+                    String cardNumberPart = parts[1].trim();
+                    cardNumberPart = cardNumberPart.replaceAll("[^0-9]", "");
+
+                    if (cardNumberPart.length() >= 4) {
+                        return cardNumberPart.substring(cardNumberPart.length() - 4);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // 예외 발생 시 기본값 반환
+        }
+
+        return "****";
+    }
+
+    // 토스페이먼츠 결제 정보 설정
+    public void setTossPaymentsInfo(Map<String, Object> tossPaymentsInfo) {
+        this.tossPaymentsInfo = tossPaymentsInfo;
+    }
+
+    public Map<String, Object> getPaymentGatewayInfo() {
+        Map<String, Object> gatewayInfo = new HashMap<>();
+        gatewayInfo.put("paymentId", this.paymentId);
+        gatewayInfo.put("amount", this.amount);
+        gatewayInfo.put("orderId", "CARENEST-" + this.reservationId.toString().substring(0, 8));
+        gatewayInfo.put("orderName", "CareNest 간병 서비스 예약");
+        gatewayInfo.put("successUrl", "http://localhost:9040/api/v1/payments/toss/success?paymentId=" + this.paymentId);
+        gatewayInfo.put("failUrl", "http://localhost:9040/api/v1/payments/toss/fail");
+        return gatewayInfo;
     }
 }

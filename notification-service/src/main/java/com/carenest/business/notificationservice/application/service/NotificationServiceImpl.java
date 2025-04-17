@@ -1,10 +1,12 @@
 package com.carenest.business.notificationservice.application.service;
 
+import com.carenest.business.common.exception.BaseException;
 import com.carenest.business.notificationservice.application.dto.request.NotificationCreateRequestDto;
 import com.carenest.business.notificationservice.application.dto.response.NotificationResponseDto;
 import com.carenest.business.notificationservice.domain.model.Notification;
 import com.carenest.business.notificationservice.domain.model.NotificationType;
 import com.carenest.business.notificationservice.domain.repository.NotificationRepository;
+import com.carenest.business.notificationservice.exception.NotificationErrorCode;
 import com.carenest.business.notificationservice.infrastructure.client.UserClient;
 import com.carenest.business.notificationservice.infrastructure.config.NotificationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +34,7 @@ public class NotificationServiceImpl implements NotificationService{
         // 사용자 존재 여부 확인
         Boolean isValidUser = userClient.validateUser(requestDto.getReceiverId());
         if (!isValidUser) {
-            throw new IllegalArgumentException("존재하지 않는 유저에게 알림을 보낼 수 없습니다.");
+            throw new BaseException(NotificationErrorCode.USER_NOT_FOUND);
         }
 
         String content = "[" + requestDto.getReceiverId() + "] " + notificationType.getMessage();
@@ -83,7 +85,7 @@ public class NotificationServiceImpl implements NotificationService{
     @Override
     public void markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 알림이 존재하지 않습니다."));
+                .orElseThrow(() -> new BaseException(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
         notification.markAsRead();
         notificationRepository.save(notification);
     }

@@ -1,9 +1,9 @@
 server:
-  port: 9030
+  port: 9090
 
 spring:
   application:
-    name: reservation-service
+    name: ai-service
   profiles:
     active: local
   config:

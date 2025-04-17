@@ -16,6 +16,8 @@ import java.util.UUID;
 public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByReservationId(UUID reservationId);
 
+    Optional<Payment> findByPaymentKey(String paymentKey);
+
     List<Payment> findByGuardianId(UUID guardianId);
 
     List<Payment> findByCaregiverId(UUID caregiverId);

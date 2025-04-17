@@ -1,9 +1,9 @@
-package com.carenest.business.paymentservice.infrastructure.client.dto.request;
+package com.carenest.business.paymentservice.infrastructure.external.toss.dto.response;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
 
@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PaySoApprovalRequestDto {
+public class TossSuccessCallbackResponse {
     private String paymentKey;
+    private String orderId;
     private BigDecimal amount;
-    private String merchantId;
 }

@@ -18,7 +18,9 @@ public class PaymentHistoryResponse {
     private UUID paymentId;
     private UUID reservationId;
     private UUID guardianId;
+    private String guardianName;
     private UUID caregiverId;
+    private String caregiverName;
     private PaymentStatus status;
     private PaymentStatus prevStatus;
     private BigDecimal amount;
@@ -40,13 +42,26 @@ public class PaymentHistoryResponse {
         this.amount = history.getAmount();
         this.createdAt = history.getCreatedAt();
 
-        // TODO: 이전 상태와 비교하여 설정하도록 구현하기
         setDescriptionBasedOnStatus(history.getStatus());
 
-        // TODO: 시스템 정보 설정하도록 구현하기
+        // 시스템 정보 설정
         this.createdBy = "system";
         this.ipAddress = "127.0.0.1";
         this.userAgent = "Server";
+    }
+
+    public PaymentHistoryResponse(PaymentHistory history,
+                                  String guardianName,
+                                  String caregiverName,
+                                  PaymentStatus prevStatus) {
+        this(history);
+        this.guardianName = guardianName;
+        this.caregiverName = caregiverName;
+        this.prevStatus = prevStatus;
+
+        if (prevStatus != null && prevStatus != history.getStatus()) {
+            updateDescriptionWithStatusChange(prevStatus, history.getStatus());
+        }
     }
 
     private void setDescriptionBasedOnStatus(PaymentStatus status) {
@@ -65,6 +80,27 @@ public class PaymentHistoryResponse {
                 break;
             default:
                 this.description = "결제 상태가 변경되었습니다.";
+        }
+    }
+
+    private void updateDescriptionWithStatusChange(PaymentStatus prevStatus, PaymentStatus newStatus) {
+        this.description = String.format("결제 상태가 [%s]에서 [%s]로 변경되었습니다.",
+                getStatusDisplayName(prevStatus),
+                getStatusDisplayName(newStatus));
+    }
+
+    private String getStatusDisplayName(PaymentStatus status) {
+        switch (status) {
+            case PENDING:
+                return "결제 대기";
+            case COMPLETED:
+                return "결제 완료";
+            case CANCELLED:
+                return "결제 취소";
+            case REFUNDED:
+                return "환불 완료";
+            default:
+                return "알 수 없음";
         }
     }
 }

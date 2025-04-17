@@ -93,6 +93,13 @@ public class UserService {
         return UserInfoResponseDTO.from(user);
     }
 
+    // 유저 상세 정보 반환
+    public UserInfoResponseDTO getUserDetails(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        return UserInfoResponseDTO.from(user);
+    }
+
     // 내 정보 수정
     @Transactional
     public UpdateUserResponseDTO updateMyInfo(AuthUserInfo authUserInfo,
