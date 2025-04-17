@@ -316,15 +316,6 @@ public class CaregiverServiceImpl implements CaregiverService {
 			.map(n -> n.getCategoryLocation().getName())
 			.toList();
 
-		// 3. 리뷰 서비스에서, 평점 조회 후 새롭게 갱신
-		try{
-			CaregiverRatingDto ratingDto = reviewClient.calculateRating(caregiverId).getData();
-			log.info("리뷰 서비스에서 동기 데이터 수신: {}",ratingDto);
-			caregiver.updateRating(ratingDto.getAverageRating());
-		}catch (FeignException e){
-			log.error("리뷰 서비스 호출 실패: status={}, message={}", e.status(), e.getMessage());
-			throw new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
-		}
 
 		return new CaregiverReadResponseServiceDTO(caregiver.getId(), caregiver.getUserId(), caregiver.getDescription(),
 			caregiver.getRating(), caregiver.getExperienceYears(), caregiver.getPricePerHour(),
