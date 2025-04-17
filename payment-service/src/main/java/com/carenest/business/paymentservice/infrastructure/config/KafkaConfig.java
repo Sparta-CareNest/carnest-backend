@@ -68,4 +68,12 @@ public class KafkaConfig {
     public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
+
+    @Bean
+    public NewTopic notificationEventTopic() {
+        return TopicBuilder.name("notification-event")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
 }
