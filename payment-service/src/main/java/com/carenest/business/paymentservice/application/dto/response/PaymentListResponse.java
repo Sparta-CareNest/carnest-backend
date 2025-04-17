@@ -38,8 +38,7 @@ public class PaymentListResponse {
             this.completedAt = payment.getUpdatedAt();
         }
 
-        // TODO: caregiverName과 servicePeriod는 서비스 연동 시 설정 구현하기
-        this.caregiverName = "간병인 이름";
-        this.servicePeriod = "서비스 기간";
+        this.caregiverName = "간병인 정보 로딩 중";
+        this.servicePeriod = "서비스 기간 정보 로딩 중";
     }
 }

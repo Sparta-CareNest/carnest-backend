@@ -12,11 +12,16 @@ import com.carenest.business.paymentservice.domain.model.PaymentHistory;
 import com.carenest.business.paymentservice.domain.model.PaymentStatus;
 import com.carenest.business.paymentservice.domain.service.PaymentDomainService;
 import com.carenest.business.paymentservice.exception.*;
+import com.carenest.business.paymentservice.infrastructure.client.ReservationInternalClient;
+import com.carenest.business.paymentservice.infrastructure.client.UserInternalClient;
+import com.carenest.business.paymentservice.infrastructure.client.dto.response.ReservationDetailsResponseDto;
+import com.carenest.business.paymentservice.infrastructure.client.dto.response.UserInfoResponseDTO;
 import com.carenest.business.paymentservice.infrastructure.external.PaymentGatewayService;
 import com.carenest.business.paymentservice.infrastructure.kafka.PaymentEventProducer;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentHistoryRepository;
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentRepository;
 import com.carenest.business.paymentservice.infrastructure.service.NotificationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -39,19 +43,21 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentDomainService paymentDomainService;
     private final PaymentGatewayService paymentGatewayService;
     private final NotificationService notificationService;
-    private final PaymentEventProducer paymentEventProducer; // Kafka 이벤트 프로듀서 추가
+    private final PaymentEventProducer paymentEventProducer;
+    private final ReservationInternalClient reservationInternalClient;
+    private final UserInternalClient userInternalClient;
 
     @Override
     @Transactional
     public PaymentResponse createPayment(PaymentCreateRequest request, UUID guardianId) {
         log.info("결제 생성 요청: reservationId={}, amount={}", request.getReservationId(), request.getAmount());
 
-        // 동일한 예약에 대해 결제가 이미 존재하는지 확인
+        // 동일한 예약에 대해 결제가 존재하는지 확인
         Optional<Payment> existingPayment = paymentRepository.findByReservationId(request.getReservationId());
         if (existingPayment.isPresent()) {
             if (existingPayment.get().getStatus() == PaymentStatus.PENDING) {
                 log.info("이미 진행 중인 결제가 있습니다: paymentId={}", existingPayment.get().getPaymentId());
-                return new PaymentResponse(existingPayment.get());
+                return new PaymentResponse(existingPayment.get(), getUserDetails(guardianId), getUserDetails(request.getCaregiverId()), getReservationDetails(request.getReservationId()));
             }
             log.warn("이미 처리된 결제가 있습니다: paymentId={}, status={}",
                     existingPayment.get().getPaymentId(), existingPayment.get().getStatus());
@@ -59,37 +65,43 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // 결제 게이트웨이에 결제 준비 요청
+            ObjectMapper objectMapper = new ObjectMapper();
+            // 토스페이먼츠 결제 준비 요청
             Map<String, Object> paymentPrepareResult = paymentGatewayService.preparePayment(
                     request.getReservationId(),
                     request.getAmount(),
                     request.getPaymentMethod()
             );
 
+            // 결제 정보 생성
             Payment payment = new Payment(
                     request.getReservationId(),
                     guardianId,
                     request.getCaregiverId(),
                     request.getAmount(),
                     request.getPaymentMethod(),
-                    request.getPaymentMethodDetail(),
-                    request.getPaymentGateway()
+                    request.getPaymentMethodDetail() != null ? objectMapper.writeValueAsString(request.getPaymentMethodDetail()) : null,
+                    "TOSS_PAYMENTS" // 토스페이먼츠 결제 게이트웨이 사용
             );
 
-            // TODO: 결제 키 있으면 설정하기
-            if (paymentPrepareResult.containsKey("paymentKey")) {
-                payment.setPaymentKey((String) paymentPrepareResult.get("paymentKey"));
-            }
-
+            // 결제 저장
             Payment savedPayment = paymentRepository.save(payment);
             paymentDomainService.createPaymentHistory(savedPayment);
 
             log.info("결제 생성 완료: paymentId={}", savedPayment.getPaymentId());
-            return new PaymentResponse(savedPayment);
+
+            UserInfoResponseDTO guardianDetails = getUserDetails(guardianId);
+            UserInfoResponseDTO caregiverDetails = getUserDetails(request.getCaregiverId());
+            ReservationDetailsResponseDto reservationDetails = getReservationDetails(request.getReservationId());
+
+            PaymentResponse response = new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
+            response.setTossPaymentsInfo(paymentPrepareResult);
+
+            return response;
         } catch (Exception e) {
             log.error("결제 생성 중 오류 발생", e);
             if (e instanceof PaymentException) {
-                throw e;
+                throw (PaymentException) e;
             }
             throw new PaymentException(PaymentErrorCode.PAYMENT_PROCESSING_ERROR);
         }
@@ -106,7 +118,11 @@ public class PaymentServiceImpl implements PaymentService {
                     return new PaymentNotFoundException();
                 });
 
-        return new PaymentResponse(payment);
+        UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+        UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+        ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+        return new PaymentResponse(payment, guardianDetails, caregiverDetails, reservationDetails);
     }
 
     @Override
@@ -120,7 +136,11 @@ public class PaymentServiceImpl implements PaymentService {
                     return new PaymentNotFoundException();
                 });
 
-        return new PaymentResponse(payment);
+        UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+        UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+        ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+        return new PaymentResponse(payment, guardianDetails, caregiverDetails, reservationDetails);
     }
 
     @Override
@@ -133,7 +153,28 @@ public class PaymentServiceImpl implements PaymentService {
                 startDate, endDate, pageable.getPageNumber(), pageable.getPageSize());
 
         Page<Payment> payments = paymentRepository.findByCreatedAtBetween(startDate, endDate, pageable);
-        return payments.map(PaymentListResponse::new);
+
+        return payments.map(payment -> {
+            PaymentListResponse response = new PaymentListResponse(payment);
+
+            // 사용자 및 예약 정보 설정
+            try {
+                ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+                UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+
+                response.setCaregiverName(caregiverDetails.getName());
+                if (reservationDetails != null) {
+                    response.setServicePeriod(formatServicePeriod(
+                            reservationDetails.getStartedAt(),
+                            reservationDetails.getEndedAt()
+                    ));
+                }
+            } catch (Exception e) {
+                log.warn("결제 목록 조회 중 사용자/예약 정보 가져오기 실패: {}", e.getMessage());
+            }
+
+            return response;
+        });
     }
 
     @Override
@@ -150,7 +191,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         if (!paymentsByGuardian.isEmpty()) {
             log.info("보호자로 결제 내역 {} 건 조회됨", paymentsByGuardian.getTotalElements());
-            return paymentsByGuardian.map(PaymentListResponse::new);
+            return transformPaymentsToResponse(paymentsByGuardian);
         }
 
         // 간병인 ID로 조회
@@ -158,13 +199,13 @@ public class PaymentServiceImpl implements PaymentService {
                 userId, startDate, endDate, pageable);
 
         log.info("간병인으로 결제 내역 {} 건 조회됨", paymentsByCaregiver.getTotalElements());
-        return paymentsByCaregiver.map(PaymentListResponse::new);
+        return transformPaymentsToResponse(paymentsByCaregiver);
     }
 
     @Override
     @Transactional
     public PaymentResponse completePayment(UUID paymentId, PaymentCompleteRequest request) {
-        log.info("결제 완료 처리: paymentId={}, approvalNumber={}", paymentId, request.getApprovalNumber());
+        log.info("결제 완료 처리: paymentId={}, paymentKey={}", paymentId, request.getPaymentKey());
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> {
@@ -178,10 +219,17 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // 실제 게이트웨이에 승인 요청하고 결과 받기
-            PaymentCompleteRequest actualResult = paymentGatewayService.approvePayment(
-                    payment.getPaymentKey(), payment.getAmount());
+            PaymentCompleteRequest actualResult;
+            if (request.getPaymentKey() != null) {
+                // 토스페이먼츠 결제 승인 요청
+                actualResult = paymentGatewayService.approvePayment(
+                        request.getPaymentKey(), payment.getAmount());
+            } else {
+                // 기존 로직 유지
+                actualResult = request;
+            }
 
+            // 결제 완료 처리
             payment.completePayment(
                     actualResult.getApprovalNumber(),
                     actualResult.getPgTransactionId(),
@@ -199,7 +247,12 @@ public class PaymentServiceImpl implements PaymentService {
             paymentEventProducer.sendPaymentCompletedEvent(savedPayment);
 
             log.info("결제 완료 처리 성공: paymentId={}", paymentId);
-            return new PaymentResponse(savedPayment);
+
+            UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+            UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+            ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+            return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
         } catch (Exception e) {
             log.error("결제 완료 처리 중 오류 발생", e);
             if (e instanceof PaymentException) {
@@ -226,7 +279,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            // TODO: 게이트웨이 연동 시 실제 취소 요청
+            // 토스페이먼츠 결제 취소 요청 (COMPLETED 상태일 때만)
             if (payment.getStatus() == PaymentStatus.COMPLETED && payment.getPaymentKey() != null) {
                 boolean cancelResult = paymentGatewayService.cancelPayment(
                         payment.getPaymentKey(), payment.getAmount(), cancelReason);
@@ -248,7 +301,13 @@ public class PaymentServiceImpl implements PaymentService {
             paymentEventProducer.sendPaymentCancelledEvent(savedPayment);
 
             log.info("결제 취소 완료: paymentId={}", paymentId);
-            return new PaymentResponse(savedPayment);
+
+            // 사용자 및 예약 정보 조회
+            UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+            UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+            ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+            return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
         } catch (Exception e) {
             log.error("결제 취소 중 오류 발생", e);
             if (e instanceof PaymentException) {
@@ -275,6 +334,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
+            // 토스페이먼츠 결제 환불 요청
             if (payment.getPaymentKey() != null) {
                 boolean refundResult = paymentGatewayService.refundPayment(
                         payment.getPaymentKey(), request);
@@ -302,7 +362,12 @@ public class PaymentServiceImpl implements PaymentService {
             paymentEventProducer.sendPaymentCancelledEvent(savedPayment);
 
             log.info("결제 환불 완료: paymentId={}", paymentId);
-            return new PaymentResponse(savedPayment);
+
+            UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+            UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+            ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+            return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
         } catch (Exception e) {
             log.error("결제 환불 중 오류 발생", e);
             if (e instanceof PaymentException) {
@@ -337,10 +402,46 @@ public class PaymentServiceImpl implements PaymentService {
             return new PageImpl<>(Collections.emptyList(), pageable, histories.size());
         }
 
-        List<PaymentHistoryResponse> responseList = histories.subList(start, end)
-                .stream()
-                .map(PaymentHistoryResponse::new)
-                .collect(Collectors.toList());
+        Payment payment = paymentRepository.findById(paymentId).orElse(null);
+        String guardianName = "알 수 없음";
+        String caregiverName = "알 수 없음";
+
+        if (payment != null) {
+            try {
+                UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
+                if (guardianDetails != null) {
+                    guardianName = guardianDetails.getName();
+                }
+
+                UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+                if (caregiverDetails != null) {
+                    caregiverName = caregiverDetails.getName();
+                }
+            } catch (Exception e) {
+                log.warn("사용자 정보 조회 실패: {}", e.getMessage());
+            }
+        }
+
+        List<PaymentHistoryResponse> responseList = new ArrayList<>();
+        List<PaymentHistory> pagedHistories = histories.subList(start, end);
+
+        // 이전 상태 추적
+        PaymentStatus prevStatus = null;
+
+        for (int i = 0; i < pagedHistories.size(); i++) {
+            PaymentHistory history = pagedHistories.get(i);
+
+            // 첫 번째가 아닌 경우 이전 이력의 상태를 이전 상태로 설정
+            if (i > 0) {
+                prevStatus = pagedHistories.get(i - 1).getStatus();
+            }
+
+            // 사용자 정보와 이전 상태 정보를 포함하여 응답 생성
+            PaymentHistoryResponse response = new PaymentHistoryResponse(
+                    history, guardianName, caregiverName, prevStatus);
+
+            responseList.add(response);
+        }
 
         log.info("결제 이력 {} 건 조회됨: paymentId={}", histories.size(), paymentId);
         return new PageImpl<>(responseList, pageable, histories.size());
@@ -367,7 +468,28 @@ public class PaymentServiceImpl implements PaymentService {
                 LocalDateTime firstCreatedAt = histories.get(0).getCreatedAt();
                 LocalDateTime lastUpdatedAt = histories.get(histories.size() - 1).getCreatedAt();
 
-                responses.add(new PaymentHistoryDetailResponse(payment, historyCount, firstCreatedAt, lastUpdatedAt));
+                PaymentHistoryDetailResponse response = new PaymentHistoryDetailResponse(payment, historyCount, firstCreatedAt, lastUpdatedAt);
+
+                // 사용자 및 예약 정보 설정
+                try {
+                    UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+                    ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+                    if (caregiverDetails != null) {
+                        response.setCaregiverName(caregiverDetails.getName());
+                    }
+
+                    if (reservationDetails != null) {
+                        response.setServicePeriod(formatServicePeriod(
+                                reservationDetails.getStartedAt(),
+                                reservationDetails.getEndedAt()
+                        ));
+                    }
+                } catch (Exception e) {
+                    log.warn("결제 이력 조회 중 사용자/예약 정보 가져오기 실패: {}", e.getMessage());
+                }
+
+                responses.add(response);
             }
         }
 
@@ -404,11 +526,87 @@ public class PaymentServiceImpl implements PaymentService {
                 LocalDateTime firstCreatedAt = histories.get(0).getCreatedAt();
                 LocalDateTime lastUpdatedAt = histories.get(histories.size() - 1).getCreatedAt();
 
-                responses.add(new PaymentHistoryDetailResponse(payment, historyCount, firstCreatedAt, lastUpdatedAt));
+                PaymentHistoryDetailResponse response = new PaymentHistoryDetailResponse(payment, historyCount, firstCreatedAt, lastUpdatedAt);
+
+                // 사용자 및 예약 정보 설정
+                try {
+                    UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+                    ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+                    if (caregiverDetails != null) {
+                        response.setCaregiverName(caregiverDetails.getName());
+                    }
+
+                    if (reservationDetails != null) {
+                        response.setServicePeriod(formatServicePeriod(
+                                reservationDetails.getStartedAt(),
+                                reservationDetails.getEndedAt()
+                        ));
+                    }
+                } catch (Exception e) {
+                    log.warn("결제 이력 조회 중 사용자/예약 정보 가져오기 실패: {}", e.getMessage());
+                }
+
+                responses.add(response);
             }
         }
 
         log.info("사용자 결제 이력 {} 건 조회됨: userId={}", responses.size(), userId);
         return new PageImpl<>(responses, pageable, payments.getTotalElements());
+    }
+
+    private Page<PaymentListResponse> transformPaymentsToResponse(Page<Payment> payments) {
+        return payments.map(payment -> {
+            PaymentListResponse response = new PaymentListResponse(payment);
+
+            // 사용자 및 예약 정보 설정
+            try {
+                UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
+                ReservationDetailsResponseDto reservationDetails = getReservationDetails(payment.getReservationId());
+
+                if (caregiverDetails != null) {
+                    response.setCaregiverName(caregiverDetails.getName());
+                }
+
+                if (reservationDetails != null) {
+                    response.setServicePeriod(formatServicePeriod(
+                            reservationDetails.getStartedAt(),
+                            reservationDetails.getEndedAt()
+                    ));
+                }
+            } catch (Exception e) {
+                log.warn("결제 목록 변환 중 사용자/예약 정보 가져오기 실패: {}", e.getMessage());
+            }
+
+            return response;
+        });
+    }
+
+    private UserInfoResponseDTO getUserDetails(UUID userId) {
+        try {
+            // userInternalClient를 통해 사용자 정보 조회
+            return userInternalClient.getUserDetails(userId);
+        } catch (Exception e) {
+            log.warn("사용자 정보 조회 실패: userId={}, error={}", userId, e.getMessage());
+            return new UserInfoResponseDTO(userId, "알 수 없음", "사용자", "이메일 없음", "알 수 없음", "전화번호 없음");
+        }
+    }
+
+    private ReservationDetailsResponseDto getReservationDetails(UUID reservationId) {
+        try {
+            // reservationInternalClient를 통해 예약 정보 조회
+            return reservationInternalClient.getReservationDetails(reservationId);
+        } catch (Exception e) {
+            log.warn("예약 정보 조회 실패: reservationId={}, error={}", reservationId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String formatServicePeriod(LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) {
+            return "기간 정보 없음";
+        }
+
+        return start.toLocalDate() + " ~ " + end.toLocalDate();
     }
 }
