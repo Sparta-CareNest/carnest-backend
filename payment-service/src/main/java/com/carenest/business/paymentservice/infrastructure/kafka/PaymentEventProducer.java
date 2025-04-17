@@ -35,13 +35,13 @@ public class PaymentEventProducer {
 
         future.whenComplete((result, ex) -> {
             if (ex == null) {
-                log.info("Payment completed event sent successfully for paymentId: {}", payment.getPaymentId());
-                log.debug("Message sent to topic: {}, partition: {}, offset: {}",
+                log.info("결제 완료 이벤트 발행 성공: paymentId={}", payment.getPaymentId());
+                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
                         result.getRecordMetadata().topic(),
                         result.getRecordMetadata().partition(),
                         result.getRecordMetadata().offset());
             } else {
-                log.error("Failed to send payment completed event for paymentId: {}", payment.getPaymentId(), ex);
+                log.error("결제 완료 이벤트 발행 실패: paymentId={}", payment.getPaymentId(), ex);
             }
         });
     }
@@ -62,13 +62,13 @@ public class PaymentEventProducer {
 
         future.whenComplete((result, ex) -> {
             if (ex == null) {
-                log.info("Payment cancelled event sent successfully for paymentId: {}", payment.getPaymentId());
-                log.debug("Message sent to topic: {}, partition: {}, offset: {}",
+                log.info("결제 취소 이벤트 발행 성공: paymentId={}", payment.getPaymentId());
+                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
                         result.getRecordMetadata().topic(),
                         result.getRecordMetadata().partition(),
                         result.getRecordMetadata().offset());
             } else {
-                log.error("Failed to send payment cancelled event for paymentId: {}", payment.getPaymentId(), ex);
+                log.error("결제 취소 이벤트 발행 실패: paymentId={}", payment.getPaymentId(), ex);
             }
         });
     }
