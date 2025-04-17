@@ -1,5 +1,7 @@
 package com.carenest.business.aiservice.infrastructure.client;
 
+import com.carenest.business.aiservice.exception.AiException;
+import com.carenest.business.aiservice.exception.ErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -22,6 +24,8 @@ public class GeminiClient {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     private static final String URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
     public String translateToEnglish(String content) {
@@ -31,7 +35,6 @@ public class GeminiClient {
         String prompt = "Translate this to English: " + content;
 
         // JSON 객체 구성
-        ObjectMapper mapper = new ObjectMapper();
         ObjectNode requestBody = mapper.createObjectNode();
 
         ObjectNode part = mapper.createObjectNode();
@@ -58,12 +61,17 @@ public class GeminiClient {
         String requestUrl = URL + "?key=" + apiKey;
         ResponseEntity<String> response = restTemplate.postForEntity(requestUrl, request, String.class);
 
+        if (response.getStatusCode().is4xxClientError()) {
+            throw new AiException(ErrorCode.GEMINI_CLIENT_ERROR);
+        } else if (response.getStatusCode().is5xxServerError()) {
+            throw new AiException(ErrorCode.GEMINI_SERVER_ERROR);
+        }
+
         return extractTranslation(response.getBody());
     }
 
     private String extractTranslation(String responseBody) {
         try {
-            ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(responseBody);
             return root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
         } catch (Exception e) {
