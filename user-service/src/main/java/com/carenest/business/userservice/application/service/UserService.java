@@ -1,5 +1,6 @@
 package com.carenest.business.userservice.application.service;
 
+import java.util.Date;
 import java.util.UUID;
 
 import com.carenest.business.common.exception.BaseException;
@@ -14,6 +15,9 @@ import com.carenest.business.userservice.domain.model.User;
 import com.carenest.business.userservice.domain.repository.UserRepository;
 import com.carenest.business.userservice.infrastructure.security.JwtUtil;
 import com.carenest.business.common.annotation.AuthUserInfo;
+import com.carenest.business.userservice.infrastructure.security.TokenBlacklistService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +33,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // 회원가입
     public SignupResponseDTO signup(SignupRequestDTO request) {
@@ -79,16 +84,23 @@ public class UserService {
         return LoginResponseDTO.of(accessToken,refreshToken, user);
     }
 
-//    // 로그아웃
-//    @Transactional
-//    public void logout() {
-//        // 현재 인증된 사용자 정보 가져오기 (실제로는 SecurityContext에서 가져옴)
-//        String currentUsername = "현재_로그인한_사용자"; // 예시
-//
-//        // 토큰 무효화 로직 (실제로는 Redis에 블랙리스트 저장 등)
-//        System.out.println(currentUsername + "의 토큰이 무효화되었습니다.");
-//    }
-//
+    // 로그아웃
+    @Transactional
+    public void logout(AuthUserInfo authUserInfo , HttpServletRequest request) {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String accessToken = jwtUtil.substringToken(authHeader);
+        // 토큰에서 만료 시간 추출
+        Date expiration = jwtUtil.getExpiration(accessToken);
+        long now = System.currentTimeMillis();
+        long remainingMillis = expiration.getTime() - now;
+
+        if (remainingMillis > 0) {
+            tokenBlacklistService.blacklistToken(accessToken, remainingMillis);
+            log.info("Access token 블랙리스트 등록 완료: {}", accessToken);
+        }
+        System.out.println(authUserInfo + "의 토큰이 무효화되었습니다.");
+    }
+
     // 내 정보 조회
     public UserInfoResponseDTO getMyInfo(AuthUserInfo authUserInfo) {
 

@@ -8,6 +8,7 @@ import com.carenest.business.userservice.application.dto.response.*;
 import com.carenest.business.userservice.application.service.UserService;
 import com.carenest.business.common.annotation.AuthUser;
 import com.carenest.business.common.annotation.AuthUserInfo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,13 +34,13 @@ public class UserController {
         return ResponseDto.success("로그인이 완료되었습니다.", loginResponse);
     }
 
-//    // 로그아웃
-//    @PostMapping("/logout")
-//    public ResponseDto<Void> logout() {
-//        userService.logout();
-//        return ResponseDto.success("로그아웃이 완료되었습니다.", null);
-//    }
-//
+    // 로그아웃
+    @PostMapping("/logout")
+    public ResponseDto<Void> logout(@AuthUser AuthUserInfo authUserInfo, HttpServletRequest request) {
+        userService.logout(authUserInfo,request);
+        return ResponseDto.success("로그아웃이 완료되었습니다.", null);
+    }
+
     // 내 정보 조회
     @GetMapping("/me")
     public ResponseDto<UserInfoResponseDTO> getMyInfo(@AuthUser AuthUserInfo authUserInfo) {
