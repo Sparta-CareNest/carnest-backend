@@ -203,19 +203,4 @@ public class TossPaymentController {
             log.error("웹훅 결제 취소 처리 중 오류 발생", e);
         }
     }
-
-    // 클라이언트에서 결제 위젯 초기화에 필요한 정보 제공
-    @GetMapping("/client-key")
-    public ResponseDto<Map<String, String>> getClientKey(@RequestParam UUID reservationId) {
-        // 프론트엔드에서 토스페이먼츠 결제창을 띄우기 위한 정보 제공
-        Map<String, Object> paymentInfo = paymentService
-                .getPaymentByReservationId(reservationId)
-                .getPaymentGatewayInfo();
-
-        return ResponseDto.success("토스페이먼츠 클라이언트 정보", Map.of(
-                "clientKey", System.getenv("TOSS_CLIENT_KEY"),
-                "successUrl", paymentInfo.get("successUrl").toString(),
-                "failUrl", paymentInfo.get("failUrl").toString()
-        ));
-    }
 }
