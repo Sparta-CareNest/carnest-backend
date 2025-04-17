@@ -15,12 +15,14 @@ import com.carenest.business.userservice.domain.repository.UserRepository;
 import com.carenest.business.userservice.infrastructure.security.JwtUtil;
 import com.carenest.business.common.annotation.AuthUserInfo;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserService {
 
@@ -120,22 +122,14 @@ public class UserService {
         return userRepository.existsById(id);
 	}
 
-	//
-//    // 회원 탈퇴
-//    @Transactional
-//    public WithdrawalResponseDTO deleteMyAccount() {
-//        // 현재 인증된 사용자 정보 가져오기
-//        String currentUsername = "현재_로그인한_사용자"; // 예시
-//
-//        User user = userRepository.findByUsername(currentUsername)
-//                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
-//
-//        // 소프트 딜리트 처리
-//        // 실제 구현 시 User 클래스에 deactivate 메서드 추가 필요
-//        // 또는 BaseEntity에 deletedAt 필드가 있다고 가정
-//        user.setDeletedAt(java.time.LocalDateTime.now());
-//        userRepository.save(user);
-//
-//        return new WithdrawalResponseDTO(true, "회원 탈퇴가 완료되었습니다.");
-//    }
+
+    // 회원 탈퇴
+    @Transactional
+    public void deleteMyAccount(AuthUserInfo authUserInfo) {
+        User user = userRepository.findById(authUserInfo.getUserId())
+                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+
+        user.softDelete();
+        userRepository.save(user);
+    }
 }

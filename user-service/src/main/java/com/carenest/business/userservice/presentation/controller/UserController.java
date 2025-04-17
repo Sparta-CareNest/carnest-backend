@@ -56,10 +56,10 @@ public class UserController {
         return ResponseDto.success("정보가 수정되었습니다.", response);
     }
 
-//    // 회원 탈퇴
-//    @DeleteMapping("/me")
-//    public ResponseDto<WithdrawalResponseDTO> deleteMyAccount() {
-//        WithdrawalResponseDTO response = userService.deleteMyAccount();
-//        return ResponseDto.success("탈퇴가 완료되었습니다.", response);
-//    }
+    // 회원 탈퇴
+    @DeleteMapping("/me")
+    public ResponseDto<Void> deleteMyAccount(@AuthUser AuthUserInfo authUserInfo) {
+        userService.deleteMyAccount(authUserInfo);
+        return ResponseDto.success("탈퇴가 완료되었습니다.", null);
+    }
 }
