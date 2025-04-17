@@ -249,7 +249,54 @@ public class PaymentController {
         return ResponseDto.success("토스페이먼츠 결제 준비 정보", tossPaymentInfo);
     }
 
-    // 토스페이먼츠 결제 위젯 정보 조회
+    // 토스페이먼츠 결제 정보 제공 (통합 엔드포인트)
+    @GetMapping("/payments/toss/client-info")
+    public ResponseDto<Map<String, Object>> getTossClientInfo(
+            @AuthUser AuthUserInfo authUserInfo,
+            @RequestParam(required = false) UUID reservationId) {
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("clientKey", tossConfig.getClientKey());
+        response.put("successUrl", tossConfig.getSuccessUrl());
+        response.put("failUrl", tossConfig.getFailUrl());
+
+        // 예약 ID가 제공된 경우 결제 정보도 포함
+        if (reservationId != null) {
+            try {
+                PaymentResponse payment = paymentService.getPaymentByReservationId(reservationId);
+
+                // 본인의 결제 정보 또는 ADMIN만 조회 가능
+                if (!authUserInfo.getUserId().equals(payment.getGuardianId()) &&
+                        !authUserInfo.getUserId().equals(payment.getCaregiverId()) &&
+                        !authUserInfo.getRole().equals(UserRole.ADMIN)) {
+                    throw new UnauthorizedPaymentAccessException();
+                }
+
+                // 결제 정보 추가
+                response.put("orderId", "CARENEST-" + payment.getReservationId().toString().substring(0, 8));
+                response.put("orderName", "CareNest 간병 서비스 예약");
+                response.put("amount", payment.getAmount());
+                response.put("customerName", authUserInfo.getEmail().split("@")[0]);
+                response.put("paymentId", payment.getPaymentId());
+            } catch (Exception e) {
+                // 결제 정보가 없는 경우는 무시하고 기본 정보만 반환
+            }
+        }
+
+        return ResponseDto.success("토스페이먼츠 결제 정보", response);
+    }
+
+    // 기존 엔드포인트 유지 (deprecated 표시)
+    @Deprecated
+    @GetMapping("/payments/toss/client-key")
+    public ResponseDto<Map<String, String>> getTossClientKey() {
+        return ResponseDto.success("토스페이먼츠 클라이언트 키", Map.of(
+                "clientKey", tossConfig.getClientKey()
+        ));
+    }
+
+    // 기존 엔드포인트 유지 (deprecated 표시)
+    @Deprecated
     @GetMapping("/payments/{paymentId}/pay-with-toss")
     public ResponseDto<Map<String, Object>> getPayWithTossInfo(
             @AuthUser AuthUserInfo authUserInfo,
@@ -276,13 +323,5 @@ public class PaymentController {
         tossPaymentInfo.put("clientKey", tossConfig.getClientKey());
 
         return ResponseDto.success("토스페이먼츠 결제 정보", tossPaymentInfo);
-    }
-
-    // 토스페이먼츠 클라이언트 키 정보 제공
-    @GetMapping("/payments/toss/client-key")
-    public ResponseDto<Map<String, String>> getTossClientKey() {
-        return ResponseDto.success("토스페이먼츠 클라이언트 키", Map.of(
-                "clientKey", tossConfig.getClientKey()
-        ));
     }
 }

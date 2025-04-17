@@ -18,6 +18,8 @@ repositories {
 }
 
 dependencies {
+	implementation 'org.springframework.kafka:spring-kafka'
+
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
 	// WebSocket
