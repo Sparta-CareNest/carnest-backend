@@ -33,7 +33,7 @@ public class CaregiverRatingProducer {
             KafkaTopic.REVIEW_RATING_UPDATE.getTopicName(),
             caregiverId,
             message,
-            "점수 업데이트 이벤트"
+            KafkaTopic.REVIEW_RATING_UPDATE.getDescription()
         );
     }
 
