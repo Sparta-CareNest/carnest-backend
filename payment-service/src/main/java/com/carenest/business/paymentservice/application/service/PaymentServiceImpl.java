@@ -225,7 +225,6 @@ public class PaymentServiceImpl implements PaymentService {
                 actualResult = paymentGatewayService.approvePayment(
                         request.getPaymentKey(), payment.getAmount());
             } else {
-                // 기존 로직 유지
                 actualResult = request;
             }
 
@@ -243,10 +242,17 @@ public class PaymentServiceImpl implements PaymentService {
             // 결제 완료 알림 발송
             notificationService.sendPaymentSuccessNotification(savedPayment);
 
-            // Kafka 이벤트 발행
-            paymentEventProducer.sendPaymentCompletedEvent(savedPayment);
+            // 결제 완료 이벤트
+            try {
+                paymentEventProducer.sendPaymentCompletedEvent(savedPayment);
+                log.info("결제 완료 이벤트 발행 완료: paymentId={}, reservationId={}",
+                        savedPayment.getPaymentId(), savedPayment.getReservationId());
+            } catch (Exception e) {
+                log.error("결제 완료 이벤트 발행 실패: paymentId={}", paymentId, e);
+            }
 
-            log.info("결제 완료 처리 성공: paymentId={}", paymentId);
+            log.info("결제 완료 처리 성공: paymentId={}, reservationId={}",
+                    paymentId, payment.getReservationId());
 
             UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
             UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
