@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     @Query("SELECT n FROM Notification n WHERE n.receiverId = :receiverId ORDER BY n.sentAt DESC")
     List<Notification> findNotificationsByReceiverId(@Param("receiverId") UUID receiverId);
+    List<Notification> findNotificationsByReceiverIdAndIsRead(UUID receiverId, Boolean isRead);
 }

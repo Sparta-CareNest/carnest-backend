@@ -68,8 +68,14 @@ public class NotificationServiceImpl implements NotificationService{
     }
 
     @Override
-    public List<NotificationResponseDto> getNotificationsByReceiverId(UUID receiverId) {
-        List<Notification> notifications = notificationRepository.findNotificationsByReceiverId(receiverId);
+    public List<NotificationResponseDto> getNotificationsByReceiverId(UUID receiverId, Boolean isRead) {
+        List<Notification> notifications;
+
+        if (isRead == null) {
+            notifications = notificationRepository.findNotificationsByReceiverId(receiverId);
+        } else {
+            notifications = notificationRepository.findNotificationsByReceiverIdAndIsRead(receiverId, isRead);
+        }
 
         return notifications.stream()
                 .map(n -> new NotificationResponseDto(
