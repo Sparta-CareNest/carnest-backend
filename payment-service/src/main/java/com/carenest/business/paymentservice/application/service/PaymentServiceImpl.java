@@ -209,7 +209,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> {
-                    log.warn("결제 정보를 찾을 수 없습니다: paymentId={}", paymentId);
+                    log.error("결제 정보를 찾을 수 없습니다: paymentId={}", paymentId);
                     return new PaymentNotFoundException();
                 });
 
@@ -225,7 +225,6 @@ public class PaymentServiceImpl implements PaymentService {
                 actualResult = paymentGatewayService.approvePayment(
                         request.getPaymentKey(), payment.getAmount());
             } else {
-                // 기존 로직 유지
                 actualResult = request;
             }
 
@@ -243,10 +242,18 @@ public class PaymentServiceImpl implements PaymentService {
             // 결제 완료 알림 발송
             notificationService.sendPaymentSuccessNotification(savedPayment);
 
-            // Kafka 이벤트 발행
-            paymentEventProducer.sendPaymentCompletedEvent(savedPayment);
+            // 결제 완료 이벤트
+            try {
+                paymentEventProducer.sendPaymentCompletedEvent(savedPayment);
+                log.info("결제 완료 이벤트 발행 완료: paymentId={}, reservationId={}",
+                        savedPayment.getPaymentId(), savedPayment.getReservationId());
+            } catch (Exception e) {
+                log.error("결제 완료 이벤트 발행 실패: paymentId={}, 에러={}", paymentId, e.getMessage(), e);
+                // 이벤트 발행 실패는 결제 완료 자체에 영향을 주지 않도록 예외 처리
+            }
 
-            log.info("결제 완료 처리 성공: paymentId={}", paymentId);
+            log.info("결제 완료 처리 성공: paymentId={}, reservationId={}",
+                    paymentId, payment.getReservationId());
 
             UserInfoResponseDTO guardianDetails = getUserDetails(payment.getGuardianId());
             UserInfoResponseDTO caregiverDetails = getUserDetails(payment.getCaregiverId());
@@ -254,7 +261,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
         } catch (Exception e) {
-            log.error("결제 완료 처리 중 오류 발생", e);
+            log.error("결제 완료 처리 중 오류 발생: {}", e.getMessage(), e);
             if (e instanceof PaymentException) {
                 throw e;
             }

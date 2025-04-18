@@ -32,6 +32,14 @@ public class KafkaConfig {
     }
 
     @Bean
+    public NewTopic reservationCreatedTopic() {
+        return TopicBuilder.name(KafkaTopic.RESERVATION_CREATED.getTopicName())
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
     public NewTopic reservationCancelledTopic() {
         return TopicBuilder.name(KafkaTopic.RESERVATION_CANCELLED.getTopicName())
                 .partitions(3)
@@ -42,6 +50,14 @@ public class KafkaConfig {
     @Bean
     public NewTopic reservationStatusChangedTopic() {
         return TopicBuilder.name(KafkaTopic.RESERVATION_STATUS_CHANGED.getTopicName())
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic notificationEventTopic() {
+        return TopicBuilder.name(KafkaTopic.NOTIFICATION_EVENT.getTopicName())
                 .partitions(3)
                 .replicas(1)
                 .build();

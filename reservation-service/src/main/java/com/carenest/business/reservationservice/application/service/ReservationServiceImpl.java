@@ -10,6 +10,7 @@ import com.carenest.business.reservationservice.domain.repository.ReservationRep
 import com.carenest.business.reservationservice.domain.service.ReservationDomainService;
 import com.carenest.business.reservationservice.exception.*;
 import com.carenest.business.reservationservice.infrastructure.client.dto.response.CaregiverDetailResponseDto;
+import com.carenest.business.reservationservice.infrastructure.kafka.NotificationEventProducer;
 import com.carenest.business.reservationservice.infrastructure.kafka.ReservationEventProducer;
 import com.carenest.business.reservationservice.infrastructure.service.ExternalServiceClient;
 import com.carenest.business.reservationservice.presentation.dto.mapper.ReservationMapper;
@@ -34,6 +35,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationMapper reservationMapper;
     private final ExternalServiceClient externalServiceClient;
     private final ReservationEventProducer reservationEventProducer;
+    private final NotificationEventProducer notificationEventProducer;
 
     @Override
     @Transactional
@@ -127,18 +129,30 @@ public class ReservationServiceImpl implements ReservationService {
         log.info("예약 검색 요청: guardianId={}, caregiverId={}, status={}",
                 request.getGuardianId(), request.getCaregiverId(), request.getStatus());
 
-        Page<Reservation> reservations = reservationRepository.findBySearchCriteria(
-                request.getGuardianId(),
-                request.getCaregiverId(),
-                request.getPatientName(),
-                request.getStartDate(),
-                request.getEndDate(),
-                request.getStatus(),
-                pageable
-        );
+        // 기본 날짜 범위 설정
+        LocalDateTime startDate = request.getStartDate() != null ?
+                request.getStartDate() : LocalDateTime.now().minusMonths(1);
+        LocalDateTime endDate = request.getEndDate() != null ?
+                request.getEndDate() : LocalDateTime.now().plusMonths(1);
 
-        log.info("예약 검색 완료: count={}", reservations.getTotalElements());
-        return reservations.map(reservationMapper::toDto);
+        try {
+            Page<Reservation> reservations = reservationRepository.findBySearchCriteria(
+                    request.getGuardianId(),
+                    request.getCaregiverId(),
+                    request.getPatientName(),
+                    startDate,
+                    endDate,
+                    request.getStatus(),
+                    pageable
+            );
+
+            log.info("예약 검색 완료: count={}", reservations.getTotalElements());
+            return reservations.map(reservationMapper::toDto);
+        } catch (Exception e) {
+            log.error("예약 검색 중 오류 발생: {}", e.getMessage(), e);
+            // 오류 발생 시 빈 결과 반환
+            return Page.empty(pageable);
+        }
     }
 
     @Override
@@ -257,35 +271,60 @@ public class ReservationServiceImpl implements ReservationService {
         log.info("예약 수락 요청: reservationId={}", reservationId);
 
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> {
-                    log.error("예약 정보를 찾을 수 없음: reservationId={}", reservationId);
-                    return new ReservationNotFoundException();
-                });
+                .orElseThrow(() -> new ReservationNotFoundException());
 
         if (!reservation.isAcceptable()) {
-            log.error("예약 수락 불가: reservationId={}, currentStatus={}",
-                    reservationId, reservation.getStatus());
             throw new InvalidReservationStatusException();
         }
 
-        reservation.acceptByCaregiver(caregiverNote);
-        reservationRepository.save(reservation);
-        reservationDomainService.createReservationHistory(reservation);
+        ReservationStatus previousStatus = reservation.getStatus();
 
-        // 예약 수락 알림 발송
+        reservation.acceptByCaregiver(caregiverNote);
+
+        Reservation updatedReservation = reservationRepository.save(reservation);
+        reservationDomainService.createReservationHistory(updatedReservation);
+
         try {
-            // 보호자에게 알림
-            externalServiceClient.sendReservationCreatedNotification(
-                    reservation.getGuardianId(),
-                    String.format("예약이 간병인에 의해 수락되었습니다. 예약번호: %s, 간병인: %s",
-                            reservation.getReservationId(), reservation.getCaregiverName())
+            String guardianMsg = String.format(
+                    "예약이 간병인에 의해 수락되었습니다. 예약번호: %s, 간병인: %s, 시작일시: %s",
+                    updatedReservation.getReservationId(),
+                    updatedReservation.getCaregiverName(),
+                    updatedReservation.getStartedAt()
             );
+
+            notificationEventProducer.sendNotificationEvent(
+                    updatedReservation.getGuardianId(),
+                    "RESERVATION_ACCEPTED",
+                    guardianMsg
+            );
+
+            String caregiverMsg = String.format(
+                    "예약 수락이 완료되었습니다. 예약번호: %s, 환자명: %s, 시작일시: %s",
+                    updatedReservation.getReservationId(),
+                    updatedReservation.getPatientName(),
+                    updatedReservation.getStartedAt()
+            );
+
+            notificationEventProducer.sendNotificationEvent(
+                    updatedReservation.getCaregiverId(),
+                    "RESERVATION_CONFIRMATION",
+                    caregiverMsg
+            );
+
+            log.info("Kafka 알림 전송 완료: guardianId={}, caregiverId={}",
+                    updatedReservation.getGuardianId(), updatedReservation.getCaregiverId());
+
         } catch (Exception e) {
-            log.error("예약 수락 알림 전송 실패", e);
+            log.error("예약 수락 알림 Kafka 전송 실패", e);
         }
 
-        log.info("예약 수락 완료: reservationId={}", reservationId);
-        return reservationMapper.toDto(reservation);
+        try {
+            reservationEventProducer.sendReservationStatusChangedEvent(updatedReservation, previousStatus);
+        } catch (Exception e) {
+            log.error("예약 상태 변경 이벤트 발행 실패", e);
+        }
+
+        return reservationMapper.toDto(updatedReservation);
     }
 
     @Override
@@ -505,39 +544,69 @@ public class ReservationServiceImpl implements ReservationService {
                     return new ReservationNotFoundException();
                 });
 
+        // 결제 정보가 이미 연결된 경우
         if (reservation.getPaymentId() != null) {
-            log.error("이미 결제가 처리된 예약: reservationId={}, existingPaymentId={}",
-                    reservationId, reservation.getPaymentId());
-            throw new PaymentAlreadyProcessedException();
+            if (reservation.getPaymentId().equals(paymentId)) {
+                log.info("이미 동일한 결제 정보가 연결되어 있음: reservationId={}, paymentId={}",
+                        reservationId, paymentId);
+                return reservationMapper.toDto(reservation);
+            } else {
+                log.error("이미 다른 결제가 처리된 예약: reservationId={}, existingPaymentId={}",
+                        reservationId, reservation.getPaymentId());
+                throw new PaymentAlreadyProcessedException();
+            }
         }
 
         ReservationStatus previousStatus = reservation.getStatus();
+
         reservation.linkPayment(paymentId);
+
+        log.info("예약 상태 변경: reservationId={}, 이전 상태={}, 새 상태=PENDING_ACCEPTANCE",
+                reservationId, previousStatus);
         reservation.changeStatusToPendingAcceptance();
 
         Reservation updatedReservation = reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(updatedReservation);
 
-        // 상태 변경 이벤트 발행
-        reservationEventProducer.sendReservationStatusChangedEvent(updatedReservation, previousStatus);
+        log.info("예약 상태 변경 완료: reservationId={}, 최종 상태={}",
+                reservationId, updatedReservation.getStatus());
 
-        // 결제 완료 알림 발송
+        try {
+            reservationEventProducer.sendReservationStatusChangedEvent(updatedReservation, previousStatus);
+            log.info("예약 상태 변경 이벤트 발행 완료: reservationId={}, oldStatus={}, newStatus={}",
+                    reservationId, previousStatus, updatedReservation.getStatus());
+        } catch (Exception e) {
+            log.error("예약 상태 변경 이벤트 발행 실패: {}", e.getMessage(), e);
+        }
+
         try {
             // 보호자에게 알림
-            externalServiceClient.sendPaymentCompletedNotification(
-                    reservation.getGuardianId(),
-                    String.format("결제가 완료되었습니다. 예약번호: %s, 결제금액: %s원",
-                            reservation.getReservationId(), reservation.getTotalAmount())
+            String guardianMsg = String.format(
+                    "결제가 완료되었습니다. 예약번호: %s, 금액: %s원, 간병인의 예약 수락을 기다리고 있습니다.",
+                    updatedReservation.getReservationId(),
+                    updatedReservation.getTotalAmount()
             );
 
+            externalServiceClient.sendPaymentCompletedNotification(
+                    updatedReservation.getGuardianId(), guardianMsg);
+
+            log.info("보호자에게 결제 완료 알림 전송 완료: guardianId={}", updatedReservation.getGuardianId());
+
             // 간병인에게 알림
-            externalServiceClient.sendReservationCreatedNotification(
-                    reservation.getCaregiverId(),
-                    String.format("새로운 예약이 들어왔습니다. 확인해주세요. 예약번호: %s",
-                            reservation.getReservationId())
+            String caregiverMsg = String.format(
+                    "새로운 예약이 들어왔습니다. 예약번호: %s, 환자명: %s, 시작일시: %s, 종료일시: %s. 확인 후 수락해주세요.",
+                    updatedReservation.getReservationId(),
+                    updatedReservation.getPatientName(),
+                    updatedReservation.getStartedAt(),
+                    updatedReservation.getEndedAt()
             );
+
+            externalServiceClient.sendReservationCreatedNotification(
+                    updatedReservation.getCaregiverId(), caregiverMsg);
+
+            log.info("간병인에게 새 예약 알림 전송 완료: caregiverId={}", updatedReservation.getCaregiverId());
         } catch (Exception e) {
-            log.error("결제 완료 알림 전송 실패", e);
+            log.error("결제 완료 알림 전송 실패: {}", e.getMessage(), e);
         }
 
         log.info("결제 정보 연결 완료: reservationId={}, paymentId={}", reservationId, paymentId);

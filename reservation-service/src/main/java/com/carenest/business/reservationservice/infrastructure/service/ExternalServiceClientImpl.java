@@ -9,6 +9,7 @@ import com.carenest.business.reservationservice.infrastructure.client.dto.reques
 import com.carenest.business.reservationservice.infrastructure.client.dto.request.PaymentCreateRequestDto;
 import com.carenest.business.reservationservice.infrastructure.client.dto.response.CaregiverDetailResponseDto;
 import com.carenest.business.reservationservice.infrastructure.client.dto.response.PaymentResponseDto;
+import com.carenest.business.reservationservice.infrastructure.kafka.NotificationEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ public class ExternalServiceClientImpl implements ExternalServiceClient {
 
     private final PaymentServiceClient paymentServiceClient;
     private final NotificationServiceClient notificationServiceClient;
+    private final NotificationEventProducer notificationEventProducer;
     private final CaregiverServiceClient caregiverServiceClient;
 
     @Override
@@ -77,17 +79,18 @@ public class ExternalServiceClientImpl implements ExternalServiceClient {
     @Override
     public void sendReservationCreatedNotification(UUID userId, String message) {
         try {
-            log.info("예약 생성 알림 전송 시작: userId={}", userId);
+            log.info("예약 생성 알림 전송 시작: userId={}, message={}", userId, message);
 
-            NotificationCreateRequestDto notificationRequest = NotificationCreateRequestDto.builder()
-                    .receiverId(userId)
-                    .content(message)
-                    .build();
+            NotificationCreateRequestDto request = new NotificationCreateRequestDto(userId, message);
+            ResponseDto<?> response = notificationServiceClient.sendReservationCreatedNotification(request);
 
-            notificationServiceClient.sendReservationCreatedNotification(notificationRequest);
-            log.info("예약 생성 알림 전송 완료: userId={}", userId);
+            if ("success".equals(response.getStatus())) {
+                log.info("알림 전송 성공: userId={}", userId);
+            } else {
+                log.warn("알림 전송 실패: userId={}, status={}", userId, response.getStatus());
+            }
         } catch (Exception e) {
-            log.error("예약 생성 알림 전송 중 예외 발생", e);
+            log.error("알림 전송 중 예외 발생: userId={}, error={}", userId, e.getMessage(), e);
         }
     }
 
@@ -95,16 +98,14 @@ public class ExternalServiceClientImpl implements ExternalServiceClient {
     public void sendPaymentCompletedNotification(UUID userId, String message) {
         try {
             log.info("결제 완료 알림 전송 시작: userId={}", userId);
-
-            NotificationCreateRequestDto notificationRequest = NotificationCreateRequestDto.builder()
-                    .receiverId(userId)
-                    .content(message)
-                    .build();
-
-            notificationServiceClient.sendPaymentSuccessNotification(notificationRequest);
-            log.info("결제 완료 알림 전송 완료: userId={}", userId);
+            notificationEventProducer.sendNotificationEvent(
+                    userId,
+                    "PAYMENT_SUCCESS",
+                    message
+            );
+            log.info("결제 완료 알림 이벤트 발행 완료: userId={}", userId);
         } catch (Exception e) {
-            log.error("결제 완료 알림 전송 중 예외 발생", e);
+            log.error("결제 완료 알림 이벤트 발행 중 예외 발생", e);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.carenest.business.reservationservice.infrastructure.kafka;
 
 import com.carenest.business.common.event.reservation.ReservationCancelledEvent;
+import com.carenest.business.common.event.reservation.ReservationCreatedEvent;
 import com.carenest.business.common.event.reservation.ReservationStatusChangedEvent;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
@@ -20,6 +21,37 @@ import java.util.concurrent.CompletableFuture;
 public class ReservationEventProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
+    
+    public void sendReservationCreatedEvent(Reservation reservation) {
+        if (reservation == null) {
+            log.error("예약 생성 이벤트 발행 실패: reservation 객체가 null입니다");
+            return;
+        }
+
+        if (reservation.getReservationId() == null) {
+            log.error("예약 생성 이벤트 발행 실패: reservationId가 null입니다");
+            return;
+        }
+
+        ReservationCreatedEvent event = ReservationCreatedEvent.builder()
+                .reservationId(reservation.getReservationId())
+                .guardianId(reservation.getGuardianId())
+                .caregiverId(reservation.getCaregiverId())
+                .patientName(reservation.getPatientName())
+                .startedAt(reservation.getStartedAt())
+                .endedAt(reservation.getEndedAt())
+                .serviceType(reservation.getServiceType().name())
+                .totalAmount(reservation.getTotalAmount())
+                .serviceFee(reservation.getServiceFee())
+                .build();
+
+        sendKafkaMessage(
+                KafkaTopic.RESERVATION_CREATED.getTopicName(),
+                reservation.getReservationId(),
+                event,
+                "예약 생성 이벤트"
+        );
+    }
 
     public void sendReservationCancelledEvent(Reservation reservation) {
         if (reservation == null) {
