@@ -19,57 +19,69 @@ public class PaymentEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void sendPaymentCompletedEvent(Payment payment) {
-        PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-                .paymentId(payment.getPaymentId())
-                .reservationId(payment.getReservationId())
-                .guardianId(payment.getGuardianId())
-                .caregiverId(payment.getCaregiverId())
-                .amount(payment.getAmount())
-                .paymentMethod(payment.getPaymentMethod())
-                .approvalNumber(payment.getApprovalNumber())
-                .build();
+        try {
+            PaymentCompletedEvent event = PaymentCompletedEvent.builder()
+                    .paymentId(payment.getPaymentId())
+                    .reservationId(payment.getReservationId())
+                    .guardianId(payment.getGuardianId())
+                    .caregiverId(payment.getCaregiverId())
+                    .amount(payment.getAmount())
+                    .paymentMethod(payment.getPaymentMethod())
+                    .approvalNumber(payment.getApprovalNumber())
+                    .build();
 
-        String key = payment.getPaymentId().toString();
+            String key = payment.getPaymentId().toString();
 
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("payment-completed", key, event);
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("payment-completed", key, event);
 
-        future.whenComplete((result, ex) -> {
-            if (ex == null) {
-                log.info("결제 완료 이벤트 발행 성공: paymentId={}", payment.getPaymentId());
-                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
-                        result.getRecordMetadata().topic(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-            } else {
-                log.error("결제 완료 이벤트 발행 실패: paymentId={}", payment.getPaymentId(), ex);
-            }
-        });
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.info("결제 완료 이벤트 발행 성공: paymentId={}, reservationId={}",
+                            payment.getPaymentId(), payment.getReservationId());
+                    log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
+                            result.getRecordMetadata().topic(),
+                            result.getRecordMetadata().partition(),
+                            result.getRecordMetadata().offset());
+                } else {
+                    log.error("결제 완료 이벤트 발행 실패: paymentId={}, reservationId={}",
+                            payment.getPaymentId(), payment.getReservationId(), ex);
+                }
+            });
+        } catch (Exception e) {
+            log.error("결제 완료 이벤트 생성 중 예외 발생: paymentId={}", payment.getPaymentId(), e);
+        }
     }
 
     public void sendPaymentCancelledEvent(Payment payment) {
-        PaymentCancelledEvent event = PaymentCancelledEvent.builder()
-                .paymentId(payment.getPaymentId())
-                .reservationId(payment.getReservationId())
-                .guardianId(payment.getGuardianId())
-                .caregiverId(payment.getCaregiverId())
-                .amount(payment.getAmount())
-                .cancelReason(payment.getCancelReason())
-                .build();
+        try {
+            PaymentCancelledEvent event = PaymentCancelledEvent.builder()
+                    .paymentId(payment.getPaymentId())
+                    .reservationId(payment.getReservationId())
+                    .guardianId(payment.getGuardianId())
+                    .caregiverId(payment.getCaregiverId())
+                    .amount(payment.getAmount())
+                    .cancelReason(payment.getCancelReason())
+                    .build();
 
-        String key = payment.getPaymentId().toString();
+            String key = payment.getPaymentId().toString();
 
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("payment-cancelled", key, event);
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("payment-cancelled", key, event);
 
-        future.whenComplete((result, ex) -> {
-            if (ex == null) {
-                log.info("결제 취소 이벤트 발행 성공: paymentId={}", payment.getPaymentId());
-                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
-                        result.getRecordMetadata().topic(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-            } else {
-                log.error("결제 취소 이벤트 발행 실패: paymentId={}", payment.getPaymentId(), ex);
-            }
-        });
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.info("결제 취소 이벤트 발행 성공: paymentId={}, reservationId={}",
+                            payment.getPaymentId(), payment.getReservationId());
+                    log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
+                            result.getRecordMetadata().topic(),
+                            result.getRecordMetadata().partition(),
+                            result.getRecordMetadata().offset());
+                } else {
+                    log.error("결제 취소 이벤트 발행 실패: paymentId={}, reservationId={}",
+                            payment.getPaymentId(), payment.getReservationId(), ex);
+                }
+            });
+        } catch (Exception e) {
+            log.error("결제 취소 이벤트 생성 중 예외 발생: paymentId={}", payment.getPaymentId(), e);
+        }
     }
 }
