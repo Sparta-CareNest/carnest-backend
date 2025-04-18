@@ -88,6 +88,9 @@ public class UserService {
     @Transactional
     public void logout(AuthUserInfo authUserInfo , HttpServletRequest request) {
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BaseException(CommonErrorCode.UNAUTHORIZED);
+            }
         String accessToken = jwtUtil.substringToken(authHeader);
         // 토큰에서 만료 시간 추출
         Date expiration = jwtUtil.getExpiration(accessToken);
