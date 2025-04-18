@@ -1,5 +1,6 @@
 package com.carenest.business.notificationservice.infrastructure.kafka;
 
+import com.carenest.business.common.event.notification.NotificationEvent;
 import com.carenest.business.common.event.payment.PaymentCancelledEvent;
 import com.carenest.business.common.event.payment.PaymentCompletedEvent;
 import com.carenest.business.common.event.reservation.ReservationCancelledEvent;
@@ -86,6 +87,26 @@ public class NotificationConsumer {
             log.info("간병인 상태 변경 알림 전송 완료: caregiverId={}", caregiverId);
         } catch (Exception e) {
             log.error("예약 상태 변경 알림 처리 중 예외 발생: {}", e.getMessage(), e);
+        }
+    }
+
+    @KafkaListener(
+            topics = "notification-event",
+            groupId = "notification-group",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void handleNotificationEvent(NotificationEvent event) {
+        try {
+            log.info("일반 알림 이벤트 수신: receiverId={}, type={}", event.getReceiverId(), event.getNotificationType());
+
+            notificationService.createNotificationWithType(
+                    new NotificationCreateRequestDto(event.getReceiverId(), event.getContent()),
+                    NotificationType.valueOf(event.getNotificationType()) // ENUM 매핑 주의
+            );
+
+            log.info("일반 알림 저장 완료: receiverId={}", event.getReceiverId());
+        } catch (Exception e) {
+            log.error("일반 알림 처리 실패: {}", e.getMessage(), e);
         }
     }
 
