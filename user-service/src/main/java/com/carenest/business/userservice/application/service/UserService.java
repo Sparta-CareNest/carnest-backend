@@ -72,6 +72,11 @@ public class UserService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BaseException(UserErrorCode.USERNAME_NOT_FOUND));
 
+        // 탈퇴한 유저 확인
+        if (user.getIsDeleted()) {
+            throw new BaseException(UserErrorCode.DELETED_USER);
+        }
+
         // 비밀번호 일치 확인 (암호화된 비밀번호 비교)
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BaseException(UserErrorCode.INVALID_PASSWORD);
