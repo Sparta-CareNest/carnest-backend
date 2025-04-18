@@ -11,6 +11,6 @@ public interface ReviewRepository {
     Optional<Review> findById(UUID reviewId);
     List<Review> findAllByIsDeletedFalse();
 
-    // 간병인 평균 평점 조회
-    List<Review> findAllByCaregiverId(UUID caregiverId);
+    //삭제되지 않은 간병인의 리뷰만 조회
+    List<Review> findAllByCaregiverIdAndIsDeletedFalse(UUID caregiverId);
 }

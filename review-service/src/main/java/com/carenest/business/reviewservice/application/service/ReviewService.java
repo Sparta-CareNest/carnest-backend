@@ -63,28 +63,24 @@ public class ReviewService {
                 .content(requestDto.getContent())
                 .build();
 
-        // kafka 메세지 발행
+        // kafka
         Review savedReview = reviewRepository.save(review);
-        List<Review> reviews = reviewRepository.findAllByCaregiverId(requestDto.getCaregiverId());
-        double sum = 0.0;
-        for (Review r : reviews) {
-            sum += r.getRating();
-        }
-
-        double average = sum / reviews.size();
-        log.info("sum = {}, reviews.size = {}, average = {}", sum, reviews.size(), average);
-
-
-        // kafka 메시지 발행
-        caregiverRatingProducer.sendReviewUpdateEvent(requestDto.getCaregiverId(), average);
+        recalculateAndSendRating(requestDto.getCaregiverId());
 
         return ReviewCreateResponseDto.fromEntity(savedReview);
     }
 
-    private void validateCaregiver(UUID caregiverId) {
-        if (!Boolean.TRUE.equals(caregiverInternalClient.isExistedCaregiver(caregiverId))) {
-            throw new ReviewException(ErrorCode.INVALID_CAREGIVER);
-        }
+
+    // 평점 재계산 후 Kafka 메시지 발행 메서드
+    private void recalculateAndSendRating(UUID caregiverId) {
+        List<Review> reviews = reviewRepository.findAllByCaregiverIdAndIsDeletedFalse(caregiverId);
+
+        double average = reviews.stream()
+                .mapToDouble(Review::getRating)
+                .average()
+                .orElse(0.0);
+
+        caregiverRatingProducer.sendReviewUpdateEvent(caregiverId, average);
     }
 
     // 리뷰 단일 조회
@@ -117,6 +113,10 @@ public class ReviewService {
 
         review.update(requestDto.getRating(), requestDto.getContent());
 
+        // kafka
+        reviewRepository.save(review);
+        recalculateAndSendRating(review.getCaregiverId());
+
         return ReviewUpdateResponseDto.fromEntity(review);
     }
 
@@ -130,7 +130,9 @@ public class ReviewService {
             throw new BaseException(CommonErrorCode.INVALID_USER_STATUS);
         }
 
+        //kafka
         review.softDelete();
+        recalculateAndSendRating(review.getCaregiverId());
     }
 
     // 리뷰 검색
@@ -146,7 +148,7 @@ public class ReviewService {
     // 간병인 평균 평점 조회
     @Transactional(readOnly = true)
     public CaregiverRatingDto getCaregiverRating(UUID caregiverId) {
-        List<Review> reviews = reviewRepository.findAllByCaregiverId(caregiverId);
+        List<Review> reviews = reviewRepository.findAllByCaregiverIdAndIsDeletedFalse(caregiverId);
 
         if (reviews.isEmpty()) {
             return new CaregiverRatingDto(caregiverId, 0.0, 0L); // 리뷰 없는 경우 처리
