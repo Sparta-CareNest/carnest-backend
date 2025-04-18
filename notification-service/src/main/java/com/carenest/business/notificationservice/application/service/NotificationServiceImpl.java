@@ -60,7 +60,7 @@ public class NotificationServiceImpl implements NotificationService{
             String message = "[알림] " + saved.getContent();
             webSocketHandler.sendNotification(saved.getReceiverId(), message);
         } catch (IOException e) {
-            log.error("WebSocket 알림 전송 실패: {}", e.getMessage());
+            log.error("WebSocket 알림 전송 실패: {}", e);
         }
 
         // 알림 응답 반환
@@ -120,7 +120,7 @@ public class NotificationServiceImpl implements NotificationService{
             return message;
         } catch (Exception e) {
             log.error("메시지 가져오기 오류: {} - {}", messageKey, e.getMessage());
-            return "알림 메시지 처리 중 오류가 발생했습니다.";  // 기본 메시지 반환
+            return "[알림] 메시지 처리 실패 (" + messageKey + ")";
         }
     }
 }
