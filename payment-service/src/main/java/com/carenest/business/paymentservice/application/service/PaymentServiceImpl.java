@@ -209,7 +209,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> {
-                    log.warn("결제 정보를 찾을 수 없습니다: paymentId={}", paymentId);
+                    log.error("결제 정보를 찾을 수 없습니다: paymentId={}", paymentId);
                     return new PaymentNotFoundException();
                 });
 
@@ -248,7 +248,8 @@ public class PaymentServiceImpl implements PaymentService {
                 log.info("결제 완료 이벤트 발행 완료: paymentId={}, reservationId={}",
                         savedPayment.getPaymentId(), savedPayment.getReservationId());
             } catch (Exception e) {
-                log.error("결제 완료 이벤트 발행 실패: paymentId={}", paymentId, e);
+                log.error("결제 완료 이벤트 발행 실패: paymentId={}, 에러={}", paymentId, e.getMessage(), e);
+                // 이벤트 발행 실패는 결제 완료 자체에 영향을 주지 않도록 예외 처리
             }
 
             log.info("결제 완료 처리 성공: paymentId={}, reservationId={}",
@@ -260,7 +261,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             return new PaymentResponse(savedPayment, guardianDetails, caregiverDetails, reservationDetails);
         } catch (Exception e) {
-            log.error("결제 완료 처리 중 오류 발생", e);
+            log.error("결제 완료 처리 중 오류 발생: {}", e.getMessage(), e);
             if (e instanceof PaymentException) {
                 throw e;
             }

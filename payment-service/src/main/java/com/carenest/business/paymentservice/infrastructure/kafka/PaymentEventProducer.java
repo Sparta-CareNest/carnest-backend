@@ -20,6 +20,9 @@ public class PaymentEventProducer {
 
     public void sendPaymentCompletedEvent(Payment payment) {
         try {
+            log.info("결제 완료 이벤트 발행 시작: paymentId={}, reservationId={}",
+                    payment.getPaymentId(), payment.getReservationId());
+
             PaymentCompletedEvent event = PaymentCompletedEvent.builder()
                     .paymentId(payment.getPaymentId())
                     .reservationId(payment.getReservationId())
@@ -43,17 +46,21 @@ public class PaymentEventProducer {
                             result.getRecordMetadata().partition(),
                             result.getRecordMetadata().offset());
                 } else {
-                    log.error("결제 완료 이벤트 발행 실패: paymentId={}, reservationId={}",
-                            payment.getPaymentId(), payment.getReservationId(), ex);
+                    log.error("결제 완료 이벤트 발행 실패: paymentId={}, reservationId={}, 에러={}",
+                            payment.getPaymentId(), payment.getReservationId(), ex.getMessage(), ex);
                 }
             });
         } catch (Exception e) {
-            log.error("결제 완료 이벤트 생성 중 예외 발생: paymentId={}", payment.getPaymentId(), e);
+            log.error("결제 완료 이벤트 생성 중 예외 발생: paymentId={}, 에러={}",
+                    payment.getPaymentId(), e.getMessage(), e);
         }
     }
 
     public void sendPaymentCancelledEvent(Payment payment) {
         try {
+            log.info("결제 취소 이벤트 발행 시작: paymentId={}, reservationId={}",
+                    payment.getPaymentId(), payment.getReservationId());
+
             PaymentCancelledEvent event = PaymentCancelledEvent.builder()
                     .paymentId(payment.getPaymentId())
                     .reservationId(payment.getReservationId())
@@ -76,12 +83,13 @@ public class PaymentEventProducer {
                             result.getRecordMetadata().partition(),
                             result.getRecordMetadata().offset());
                 } else {
-                    log.error("결제 취소 이벤트 발행 실패: paymentId={}, reservationId={}",
-                            payment.getPaymentId(), payment.getReservationId(), ex);
+                    log.error("결제 취소 이벤트 발행 실패: paymentId={}, reservationId={}, 에러={}",
+                            payment.getPaymentId(), payment.getReservationId(), ex.getMessage(), ex);
                 }
             });
         } catch (Exception e) {
-            log.error("결제 취소 이벤트 생성 중 예외 발생: paymentId={}", payment.getPaymentId(), e);
+            log.error("결제 취소 이벤트 생성 중 예외 발생: paymentId={}, 에러={}",
+                    payment.getPaymentId(), e.getMessage(), e);
         }
     }
 }
