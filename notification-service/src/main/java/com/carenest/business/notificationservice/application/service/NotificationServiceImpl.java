@@ -11,10 +11,13 @@ import com.carenest.business.notificationservice.infrastructure.client.UserClien
 import com.carenest.business.notificationservice.infrastructure.config.NotificationWebSocketHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 @Slf4j
@@ -25,6 +28,7 @@ public class NotificationServiceImpl implements NotificationService{
     private final NotificationRepository notificationRepository;
     private final NotificationWebSocketHandler webSocketHandler;
     private final UserClient userClient;
+    private final MessageSource messageSource;
 
     @Override
     public NotificationResponseDto createNotificationWithType(
@@ -37,7 +41,9 @@ public class NotificationServiceImpl implements NotificationService{
             throw new BaseException(NotificationErrorCode.USER_NOT_FOUND);
         }
 
-        String content = "[" + requestDto.getReceiverId() + "] " + notificationType.getMessage();
+        // 메시지를 MessageSource로 가져오기
+        String content = getNotificationMessage(notificationType, requestDto.getReceiverId());
+        //String content = "[" + requestDto.getReceiverId() + "] " + notificationType.getMessage();
 
         // 알림 객체 생성
         Notification notification = Notification.create(
@@ -94,5 +100,27 @@ public class NotificationServiceImpl implements NotificationService{
                 .orElseThrow(() -> new BaseException(NotificationErrorCode.NOTIFICATION_NOT_FOUND));
         notification.markAsRead();
         notificationRepository.save(notification);
+    }
+
+    private String getNotificationMessage(NotificationType notificationType, UUID receiverId) {
+        String messageKey = "notification." + notificationType.getMessageKey();
+
+        // 메시지 키 로그 추가
+        log.info("메시지 키 요청: {}", messageKey);
+
+        try {
+            // MessageSource를 사용하여 메시지 가져오기
+            String message = messageSource.getMessage(messageKey, new Object[]{receiverId}, Locale.getDefault());
+
+            // 메시지가 제대로 가져와졌는지 확인
+            if (message == null || message.isEmpty()) {
+                log.warn("메시지가 비어있거나 null로 반환되었습니다. 메시지 키: {}", messageKey);
+            }
+
+            return message;
+        } catch (Exception e) {
+            log.error("메시지 가져오기 오류: {} - {}", messageKey, e.getMessage());
+            return "알림 메시지 처리 중 오류가 발생했습니다.";  // 기본 메시지 반환
+        }
     }
 }
