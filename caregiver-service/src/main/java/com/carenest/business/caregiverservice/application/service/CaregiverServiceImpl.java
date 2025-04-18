@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.carenest.business.caregiverservice.application.dto.mapper.CaregiverApplicationMapper;
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.BulkCaregiverTop10Response;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
@@ -28,7 +30,6 @@ import com.carenest.business.caregiverservice.exception.CaregiverException;
 import com.carenest.business.caregiverservice.exception.ErrorCode;
 import com.carenest.business.caregiverservice.infrastructure.client.ReviewClient;
 import com.carenest.business.caregiverservice.infrastructure.client.UserClient;
-import com.carenest.business.caregiverservice.infrastructure.client.dto.CaregiverRatingDto;
 import com.carenest.business.caregiverservice.infrastructure.client.dto.CaregiverTopRatingDto;
 import com.carenest.business.caregiverservice.infrastructure.repository.CaregiverRepository;
 import com.carenest.business.caregiverservice.infrastructure.repository.CategoryLocationRepository;
@@ -258,12 +259,11 @@ public class CaregiverServiceImpl implements CaregiverService {
 		));
 	}
 
-	// TODO: 캐싱 도입
 
 	@Override
+	@Cacheable(cacheNames = "popularCaregiver", key = "getMethodName()")
 	@Transactional(readOnly = true)
-	public List<CaregiverGetTop10ResponseServiceDTO> getTop10Caregiver() {
-
+	public BulkCaregiverTop10Response getTop10Caregiver() {
 		try{
 			// 1. Feign Client 호출
 			List<CaregiverTopRatingDto> ratingDtos = reviewClient.getTop10Caregivers().getBody();
@@ -290,7 +290,7 @@ public class CaregiverServiceImpl implements CaregiverService {
 				})
 				.toList();
 
-			return result;
+			return new BulkCaregiverTop10Response(result);
 
 		}catch (FeignException e){
 			log.error("리뷰 서비스 호출 실패: status={}, message={}", e.status(), e.getMessage());

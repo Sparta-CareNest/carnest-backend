@@ -8,8 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
+import com.carenest.business.caregiverservice.application.dto.response.BulkCaregiverTop10Response;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
-import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
@@ -34,7 +34,7 @@ public interface CaregiverService {
 
 	Page<CaregiverReadResponseServiceDTO> getCaregiverAll(Pageable pageable);
 
-	List<CaregiverGetTop10ResponseServiceDTO> getTop10Caregiver();
+	BulkCaregiverTop10Response getTop10Caregiver();
 
 	CaregiverReadResponseServiceDTO getCaregiverDetailUser(UUID caregiverId);
 }
