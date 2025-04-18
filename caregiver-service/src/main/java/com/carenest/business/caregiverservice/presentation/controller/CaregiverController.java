@@ -21,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 import com.carenest.business.caregiverservice.application.dto.request.CaregiverCreateRequestServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.BulkCaregiverTop10Response;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverCreateResponseServiceDTO;
-import com.carenest.business.caregiverservice.application.dto.response.CaregiverGetTop10ResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
@@ -30,7 +29,6 @@ import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverP
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverCreateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverCreateResponseDTO;
-import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverGetTop10ResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverSearchResponseDTO;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverUpdateResponseDTO;
@@ -110,8 +108,8 @@ public class CaregiverController {
 		@AuthUser AuthUserInfo authUserInfo
 	){
 		// Admin, Caregiver 권한이 아니면 거부
-		if(!(authUserInfo.getRole().equals(UserRole.CAREGIVER.toString())) &&
-			authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+		if(!(authUserInfo.getRole().equals(UserRole.CAREGIVER)) &&
+			authUserInfo.getRole().equals(UserRole.ADMIN)){
 			throw new BaseException(CommonErrorCode.FORBIDDEN);
 		}
 

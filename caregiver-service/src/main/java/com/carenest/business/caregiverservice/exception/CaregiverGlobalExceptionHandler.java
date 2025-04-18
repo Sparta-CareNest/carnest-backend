@@ -4,17 +4,26 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-
+import com.carenest.business.common.exception.BaseErrorCode;
+import com.carenest.business.common.exception.BaseException;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class CaregiverGlobalExceptionHandler {
 
 	@ExceptionHandler(CaregiverException.class)
-	public ResponseEntity<?> hubExceptionHandle(CaregiverException ex) {
+	public ResponseEntity<?> caregiverExceptionHandle(CaregiverException ex) {
 		ErrorCode errorCode = ex.getErrorCode();
+		return ResponseEntity
+			.status(errorCode.getStatus())
+			.body(ErrorResponse.of(errorCode.getErrorCode(), errorCode.getMessage()));
+	}
+
+	@ExceptionHandler(BaseException.class)
+	public ResponseEntity<?> baseExceptionHandle(BaseException ex) {
+		BaseErrorCode errorCode = ex.getErrorCode();
 		return ResponseEntity
 			.status(errorCode.getStatus())
 			.body(ErrorResponse.of(errorCode.getErrorCode(), errorCode.getMessage()));
