@@ -206,5 +206,6 @@ public class Reservation {
 
     public void changeStatusToPendingAcceptance() {
         this.status = ReservationStatus.PENDING_ACCEPTANCE;
+        this.updatedAt = LocalDateTime.now();
     }
 }

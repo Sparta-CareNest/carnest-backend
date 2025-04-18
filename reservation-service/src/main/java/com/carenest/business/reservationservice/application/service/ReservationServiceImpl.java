@@ -560,10 +560,16 @@ public class ReservationServiceImpl implements ReservationService {
         ReservationStatus previousStatus = reservation.getStatus();
 
         reservation.linkPayment(paymentId);
+
+        log.info("예약 상태 변경: reservationId={}, 이전 상태={}, 새 상태=PENDING_ACCEPTANCE",
+                reservationId, previousStatus);
         reservation.changeStatusToPendingAcceptance();
 
         Reservation updatedReservation = reservationRepository.save(reservation);
         reservationDomainService.createReservationHistory(updatedReservation);
+
+        log.info("예약 상태 변경 완료: reservationId={}, 최종 상태={}",
+                reservationId, updatedReservation.getStatus());
 
         try {
             reservationEventProducer.sendReservationStatusChangedEvent(updatedReservation, previousStatus);

@@ -1,7 +1,6 @@
 package com.carenest.business.paymentservice.infrastructure.kafka;
 
 import com.carenest.business.common.event.payment.PaymentCancelledEvent;
-import com.carenest.business.common.event.payment.PaymentCompletedEvent;
 import com.carenest.business.paymentservice.domain.model.Payment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +8,10 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -20,39 +23,31 @@ public class PaymentEventProducer {
 
     public void sendPaymentCompletedEvent(Payment payment) {
         try {
-            log.info("결제 완료 이벤트 발행 시작: paymentId={}, reservationId={}",
-                    payment.getPaymentId(), payment.getReservationId());
-
-            PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-                    .paymentId(payment.getPaymentId())
-                    .reservationId(payment.getReservationId())
-                    .guardianId(payment.getGuardianId())
-                    .caregiverId(payment.getCaregiverId())
-                    .amount(payment.getAmount())
-                    .paymentMethod(payment.getPaymentMethod())
-                    .approvalNumber(payment.getApprovalNumber())
-                    .build();
+            Map<String, Object> event = new HashMap<>();
+            event.put("eventId", UUID.randomUUID());
+            event.put("eventType", "PAYMENT_COMPLETED");
+            event.put("timestamp", LocalDateTime.now());
+            event.put("paymentId", payment.getPaymentId());
+            event.put("reservationId", payment.getReservationId());
+            event.put("guardianId", payment.getGuardianId());
+            event.put("caregiverId", payment.getCaregiverId());
+            event.put("amount", payment.getAmount());
+            event.put("paymentMethod", payment.getPaymentMethod());
+            event.put("approvalNumber", payment.getApprovalNumber());
 
             String key = payment.getPaymentId().toString();
-
             CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("payment-completed", key, event);
 
             future.whenComplete((result, ex) -> {
                 if (ex == null) {
                     log.info("결제 완료 이벤트 발행 성공: paymentId={}, reservationId={}",
                             payment.getPaymentId(), payment.getReservationId());
-                    log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
-                            result.getRecordMetadata().topic(),
-                            result.getRecordMetadata().partition(),
-                            result.getRecordMetadata().offset());
                 } else {
-                    log.error("결제 완료 이벤트 발행 실패: paymentId={}, reservationId={}, 에러={}",
-                            payment.getPaymentId(), payment.getReservationId(), ex.getMessage(), ex);
+                    log.error("결제 완료 이벤트 발행 실패: paymentId={}", payment.getPaymentId(), ex);
                 }
             });
         } catch (Exception e) {
-            log.error("결제 완료 이벤트 생성 중 예외 발생: paymentId={}, 에러={}",
-                    payment.getPaymentId(), e.getMessage(), e);
+            log.error("결제 완료 이벤트 생성 중 예외 발생: paymentId={}", payment.getPaymentId(), e);
         }
     }
 
