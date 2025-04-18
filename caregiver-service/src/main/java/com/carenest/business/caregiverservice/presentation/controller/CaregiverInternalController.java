@@ -44,7 +44,7 @@ public class CaregiverInternalController {
 		@AuthUser AuthUserInfo authUserInfo
 	){
 
-		if(!authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+		if(!authUserInfo.getRole().equals(UserRole.ADMIN)){
 			throw new BaseException(CommonErrorCode.FORBIDDEN);
 		}
 
@@ -68,7 +68,7 @@ public class CaregiverInternalController {
 		@AuthUser AuthUserInfo authUserInfo
 	){
 
-		if(!authUserInfo.getRole().equals(UserRole.ADMIN.toString())){
+		if(!authUserInfo.getRole().equals(UserRole.ADMIN)){
 			throw new BaseException(CommonErrorCode.FORBIDDEN);
 		}
 
