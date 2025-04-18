@@ -123,4 +123,19 @@ public class JwtUtil {
         }
         return null;
     }
+
+    // 토큰 만료 시간 반환
+    public Date getExpiration(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.getExpiration();
+        } catch (JwtException e) {
+            logger.error("토큰에서 만료 시간 조회 실패: {}", e.getMessage());
+            return null;
+        }
+    }
 }

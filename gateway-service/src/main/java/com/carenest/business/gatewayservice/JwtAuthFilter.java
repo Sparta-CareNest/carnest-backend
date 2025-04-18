@@ -2,12 +2,17 @@ package com.carenest.business.gatewayservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
@@ -20,12 +25,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class JwtAuthFilter implements GatewayFilter {
 
-    private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
-
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -40,14 +45,29 @@ public class JwtAuthFilter implements GatewayFilter {
 
         // 인증 헤더가 없거나 유효하지 않으면 그냥 통과
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith(JwtUtil.BEARER_PREFIX)) {
-            logger.warn("JWT token is missing or invalid");
+            log.warn("JWT token is missing or invalid");
             return chain.filter(exchange);
         }
 
         try {
             // Bearer 제거하여 token 추출
             String token = jwtUtil.substringToken(authHeader);
-            logger.info("Validated JWT Token: {}", token);
+            log.info("Validated JWT Token: {}", token);
+
+            log.info("블랙리스트 확인");
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                log.warn("블랙리스트에 등록된 토큰입니다: {}", token);
+                ServerHttpResponse response = exchange.getResponse();
+                response.setStatusCode(HttpStatus.UNAUTHORIZED);
+                response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+
+                String body = "{\"message\":\"블랙리스트에 등록된 토큰입니다.\"}";
+                byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+
+                return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+            }
+            log.info("블랙리스트 확인 완료");
+
             if (jwtUtil.validateToken(token)) {
                 Claims claims = jwtUtil.getUserInfoFromToken(token);
 
@@ -68,14 +88,14 @@ public class JwtAuthFilter implements GatewayFilter {
 
                     return chain.filter(exchange.mutate().request(mutatedRequest).build());
                 } catch (Exception e) {
-                    logger.error("Failed to serialize user info", e);
+                    log.error("Failed to serialize user info", e);
                 }
             } else {
                 // 유효하지 않은 토큰
-                logger.warn("Invalid JWT token");
+                log.warn("Invalid JWT token");
             }
         } catch (Exception e) {
-            logger.error("JWT processing failed", e);
+            log.error("JWT processing failed", e);
         }
 
         // 오류 발생 시 또는 토큰이 유효하지 않은 경우에도 요청 통과
