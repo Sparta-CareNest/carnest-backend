@@ -12,7 +12,6 @@ import com.carenest.business.notificationservice.infrastructure.config.Notificat
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
-import org.springframework.context.NoSuchMessageException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -64,13 +63,13 @@ public class NotificationServiceImpl implements NotificationService{
         }
 
         // 알림 응답 반환
-        return new NotificationResponseDto(
-                saved.getId(),
-                saved.getType(),
-                saved.getContent(),
-                saved.getSentAt(),
-                saved.isRead()
-        );
+        return NotificationResponseDto.builder()
+                .notificationId(saved.getId())
+                .type(saved.getType())
+                .content(saved.getContent())
+                .sentAt(saved.getSentAt())
+                .isRead(saved.isRead())
+                .build();
     }
 
     @Override
@@ -84,13 +83,7 @@ public class NotificationServiceImpl implements NotificationService{
         }
 
         return notifications.stream()
-                .map(n -> new NotificationResponseDto(
-                        n.getId(),
-                        n.getType(),
-                        n.getContent(),
-                        n.getSentAt(),
-                        n.isRead()
-                ))
+                .map(NotificationResponseDto::from)
                 .collect(Collectors.toList());
     }
 
