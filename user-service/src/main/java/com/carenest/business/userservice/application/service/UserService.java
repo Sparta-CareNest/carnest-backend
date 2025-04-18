@@ -101,7 +101,7 @@ public class UserService {
             tokenBlacklistService.blacklistToken(accessToken, remainingMillis);
             log.info("Access token 블랙리스트 등록 완료: {}", accessToken);
         }
-        System.out.println(authUserInfo + "의 토큰이 무효화되었습니다.");
+        log.info("사용자 {}의 토큰이 무효화되었습니다.", authUserInfo);
     }
 
     // 내 정보 조회
