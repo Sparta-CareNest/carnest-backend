@@ -58,7 +58,7 @@ public class ReviewService {
         Review review = Review.builder()
                 .reservationId(requestDto.getReservationId())
                 .caregiverId(requestDto.getCaregiverId())
-                .userId(UUID.randomUUID())
+                .userId(userId)
                 .rating(requestDto.getRating())
                 .content(requestDto.getContent())
                 .build();
