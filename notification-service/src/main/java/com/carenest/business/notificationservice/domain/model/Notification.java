@@ -29,13 +29,13 @@ public class Notification extends BaseEntity {
     @Column(nullable = false)
     private NotificationType type;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 500)
     private String content;
 
     @Column(name = "is_read", nullable = false)
     private boolean isRead;
 
-    @Column(name = "sent_at")
+    @Column(name = "sent_at", nullable = false)
     private LocalDateTime sentAt;
 
     public static Notification create(UUID receiverId, NotificationType type, String content) {
@@ -44,12 +44,19 @@ public class Notification extends BaseEntity {
                 .type(type)
                 .content(content)
                 .isRead(false) // 항상 false로 시작
-                .sentAt(LocalDateTime.now()) // 생성 시점 시간
                 .build();
     }
 
+    // 읽음 처리
     public void markAsRead() {
-        this.isRead = true;
+        if (!this.isRead) {
+            this.isRead = true;
+        }
     }
 
+    // 자동 시간 설정
+    @PrePersist
+    protected void onPrePersist() {
+        this.sentAt = LocalDateTime.now();
+    }
 }
