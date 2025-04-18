@@ -26,30 +26,30 @@ public class NotificationController {
     @PostMapping("/payment-success")
     public ResponseDto<NotificationResponseDto> sendPaymentSuccess(
             @RequestBody NotificationCreateRequestDto requestDto) {
-        log.info("[알림 전송 요청] type=PAYMENT_SUCCESS, receiverId={}", requestDto.getReceiverId());
-        NotificationResponseDto responseDto = notificationService.createNotificationWithType(
-                requestDto, NotificationType.PAYMENT_SUCCESS);
-        return ResponseDto.success("결제 성공 알림 전송 완료", responseDto);
+        return sendNotification(requestDto, NotificationType.PAYMENT_SUCCESS, "결제 성공 알림 전송 완료");
     }
 
     // 2. 예약 생성 알림
     @PostMapping("/reservation-created")
     public ResponseDto<NotificationResponseDto> sendReservationCreated(
             @RequestBody NotificationCreateRequestDto requestDto) {
-        log.info("[알림 전송 요청] type=RESERVATION_CREATED, receiverId={}", requestDto.getReceiverId());
-        NotificationResponseDto responseDto = notificationService.createNotificationWithType(
-                requestDto, NotificationType.RESERVATION_CREATED);
-        return ResponseDto.success("예약 생성 알림 전송 완료", responseDto);
+        return sendNotification(requestDto, NotificationType.RESERVATION_CREATED, "예약 생성 알림 전송 완료");
     }
 
     // 3. 정산 완료 알림
     @PostMapping("/settlement-completed")
     public ResponseDto<NotificationResponseDto> sendSettlementCompleted(
             @RequestBody NotificationCreateRequestDto requestDto) {
-        log.info("[알림 전송 요청] type=SETTLEMENT_COMPLETE, receiverId={}", requestDto.getReceiverId());
-        NotificationResponseDto responseDto = notificationService.createNotificationWithType(
-                requestDto, NotificationType.SETTLEMENT_COMPLETE);
-        return ResponseDto.success("정산 완료 알림 전송 완료", responseDto);
+        return sendNotification(requestDto, NotificationType.SETTLEMENT_COMPLETE, "정산 완료 알림 전송 완료");
+    }
+
+    // 공통 메서드
+    private ResponseDto<NotificationResponseDto> sendNotification(
+            NotificationCreateRequestDto requestDto, NotificationType type, String successMessage
+    ) {
+        log.info("[알림 전송 요청] type={}, receiverId={}", type, requestDto.getReceiverId());
+        NotificationResponseDto responseDto = notificationService.createNotificationWithType(requestDto, type);
+        return ResponseDto.success(successMessage, responseDto);
     }
 
     // 4. 알림 목록 조회, 읽음/안읽음 필터
