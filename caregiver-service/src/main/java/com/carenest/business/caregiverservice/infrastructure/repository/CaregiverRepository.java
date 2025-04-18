@@ -13,4 +13,6 @@ public interface CaregiverRepository extends JpaRepository<Caregiver, UUID>, Car
 	boolean existsByUserId(UUID uuid);
 
 	Optional<Caregiver> findByUserId(UUID userId);
+
+	Optional<Caregiver> findByIdAndUserId(UUID id, UUID userId);
 }

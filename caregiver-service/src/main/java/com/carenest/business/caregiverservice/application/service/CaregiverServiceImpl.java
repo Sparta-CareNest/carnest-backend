@@ -195,10 +195,11 @@ public class CaregiverServiceImpl implements CaregiverService {
 
 	@Override
 	@Transactional
-	public void deleteCaregiver(UUID caregiverId) {
+	public void deleteCaregiver(UUID caregiverId, UUID userId) {
 
-		Caregiver caregiver = caregiverRepository.findById(caregiverId)
+		Caregiver caregiver = caregiverRepository.findByIdAndUserId(caregiverId, userId)
 			.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
+
 		caregiverDomainService.deleteCaregiverWithAssociations(caregiverId, caregiver);
 	}
 

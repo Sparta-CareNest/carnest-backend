@@ -24,7 +24,7 @@ public interface CaregiverService {
 
 	CaregiverUpdateResponseServiceDTO updateCaregiver(UUID userId, CaregiverUpdateRequestDTO dto);
 
-	void deleteCaregiver(UUID caregiverId);
+	void deleteCaregiver(UUID caregiverId, UUID userId);
 
 	Page<CaregiverSearchResponseServiceDTO> searchCaregiver(String location, String service, Pageable pageable);
 
