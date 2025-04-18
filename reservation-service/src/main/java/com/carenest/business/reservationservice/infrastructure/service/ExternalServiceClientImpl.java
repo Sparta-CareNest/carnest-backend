@@ -3,7 +3,9 @@ package com.carenest.business.reservationservice.infrastructure.service;
 import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.infrastructure.client.CaregiverServiceClient;
+import com.carenest.business.reservationservice.infrastructure.client.NotificationServiceClient;
 import com.carenest.business.reservationservice.infrastructure.client.PaymentServiceClient;
+import com.carenest.business.reservationservice.infrastructure.client.dto.request.NotificationCreateRequestDto;
 import com.carenest.business.reservationservice.infrastructure.client.dto.request.PaymentCreateRequestDto;
 import com.carenest.business.reservationservice.infrastructure.client.dto.response.CaregiverDetailResponseDto;
 import com.carenest.business.reservationservice.infrastructure.client.dto.response.PaymentResponseDto;
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class ExternalServiceClientImpl implements ExternalServiceClient {
 
     private final PaymentServiceClient paymentServiceClient;
+    private final NotificationServiceClient notificationServiceClient;
     private final NotificationEventProducer notificationEventProducer;
     private final CaregiverServiceClient caregiverServiceClient;
 
@@ -76,15 +79,18 @@ public class ExternalServiceClientImpl implements ExternalServiceClient {
     @Override
     public void sendReservationCreatedNotification(UUID userId, String message) {
         try {
-            log.info("예약 생성 알림 전송 시작: userId={}", userId);
-            notificationEventProducer.sendNotificationEvent(
-                    userId,
-                    "RESERVATION_CREATED",
-                    message
-            );
-            log.info("예약 생성 알림 이벤트 발행 완료: userId={}", userId);
+            log.info("예약 생성 알림 전송 시작: userId={}, message={}", userId, message);
+
+            NotificationCreateRequestDto request = new NotificationCreateRequestDto(userId, message);
+            ResponseDto<?> response = notificationServiceClient.sendReservationCreatedNotification(request);
+
+            if ("success".equals(response.getStatus())) {
+                log.info("알림 전송 성공: userId={}", userId);
+            } else {
+                log.warn("알림 전송 실패: userId={}, status={}", userId, response.getStatus());
+            }
         } catch (Exception e) {
-            log.error("예약 생성 알림 이벤트 발행 중 예외 발생", e);
+            log.error("알림 전송 중 예외 발생: userId={}, error={}", userId, e.getMessage(), e);
         }
     }
 
