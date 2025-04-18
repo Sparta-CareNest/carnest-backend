@@ -11,9 +11,14 @@ public class ResponseDto<T> {
     private final String message;
     private final T data;
 
-    // 요청이 성공했을 때 커스텀 메시지
+    // 요청이 성공했을 때 커스텀 메시지 (data가 있을 때)
     public static <T> ResponseDto<T> success(String message, T data) {
         return new ResponseDto<>(200, "success", message, data);
+    }
+
+    // 요청이 성공했을 때 (data가 없을 때)
+    public static <T> ResponseDto<T> success(String message) {
+        return new ResponseDto<>(200, "success", message, null);
     }
 
     // 요청이 성공했을 때

@@ -8,6 +8,8 @@ spring:
     active: local
   config:
     import: optional:configserver:http://localhost:8888
+  messages:
+    encoding: UTF-8
 
   kafka:
     bootstrap-servers: localhost:9092
