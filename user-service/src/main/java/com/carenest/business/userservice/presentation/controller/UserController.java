@@ -59,8 +59,9 @@ public class UserController {
 
     // 회원 탈퇴
     @DeleteMapping("/me")
-    public ResponseDto<Void> deleteMyAccount(@AuthUser AuthUserInfo authUserInfo) {
-        userService.deleteMyAccount(authUserInfo);
+    public ResponseDto<Void> deleteMyAccount(@AuthUser AuthUserInfo authUserInfo,
+                                             HttpServletRequest request) {
+        userService.deleteMyAccount(authUserInfo, request);
         return ResponseDto.success("탈퇴가 완료되었습니다.", null);
     }
 }

@@ -140,9 +140,21 @@ public class UserService {
 
     // 회원 탈퇴
     @Transactional
-    public void deleteMyAccount(AuthUserInfo authUserInfo) {
+    public void deleteMyAccount(AuthUserInfo authUserInfo, HttpServletRequest request) {
         User user = userRepository.findById(authUserInfo.getUserId())
                 .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+
+        // 토큰 블랙리스트 처리
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = jwtUtil.substringToken(authHeader);
+            long remainingMillis = jwtUtil.getExpiration(accessToken).getTime() - System.currentTimeMillis();
+
+            if (remainingMillis > 0) {
+                tokenBlacklistService.blacklistToken(accessToken, remainingMillis);
+                log.info("회원 탈퇴 - 토큰 블랙리스트 등록: {}", accessToken);
+            }
+        }
 
         user.softDelete();
         userRepository.save(user);
