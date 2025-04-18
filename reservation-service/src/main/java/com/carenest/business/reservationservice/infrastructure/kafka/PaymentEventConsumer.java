@@ -10,6 +10,7 @@ import com.carenest.business.reservationservice.infrastructure.service.ExternalS
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,13 +31,14 @@ public class PaymentEventConsumer {
             groupId = "reservation-service-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consumePaymentCompletedEvent(PaymentCompletedEvent event) {
+    public void consumePaymentCompletedEvent(PaymentCompletedEvent event, Acknowledgment acknowledgment) {
         log.info("결제 완료 이벤트 수신: paymentId={}, reservationId={}",
                 event.getPaymentId(), event.getReservationId());
 
         try {
             if (event.getReservationId() == null) {
                 log.error("결제 완료 이벤트에 예약 ID가 없음");
+                acknowledgment.acknowledge();
                 return;
             }
 
@@ -45,6 +47,7 @@ public class PaymentEventConsumer {
 
             if (reservationOpt.isEmpty()) {
                 log.error("예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
+                acknowledgment.acknowledge();
                 return;
             }
 
@@ -55,6 +58,7 @@ public class PaymentEventConsumer {
                     reservation.getPaymentId().equals(event.getPaymentId())) {
                 log.info("이미 결제 정보가 연결되어 있음: reservationId={}, paymentId={}",
                         reservation.getReservationId(), reservation.getPaymentId());
+                acknowledgment.acknowledge();
                 return;
             }
 
@@ -91,8 +95,10 @@ public class PaymentEventConsumer {
 
             log.info("보호자에게 결제 완료 알림 전송 완료: guardianId={}", reservation.getGuardianId());
 
+            acknowledgment.acknowledge();
         } catch (Exception e) {
             log.error("결제 완료 이벤트 처리 중 오류 발생: {}", e.getMessage(), e);
+            acknowledgment.acknowledge();
         }
     }
 
@@ -102,13 +108,14 @@ public class PaymentEventConsumer {
             groupId = "reservation-service-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consumePaymentCancelledEvent(PaymentCancelledEvent event) {
+    public void consumePaymentCancelledEvent(PaymentCancelledEvent event, Acknowledgment acknowledgment) {
         log.info("결제 취소 이벤트 수신: paymentId={}, reservationId={}",
                 event.getPaymentId(), event.getReservationId());
 
         try {
             if (event.getReservationId() == null) {
                 log.error("결제 취소 이벤트에 예약 ID가 없음");
+                acknowledgment.acknowledge();
                 return;
             }
 
@@ -117,6 +124,7 @@ public class PaymentEventConsumer {
 
             if (optionalReservation.isEmpty()) {
                 log.error("예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
+                acknowledgment.acknowledge();
                 return;
             }
 
@@ -155,8 +163,11 @@ public class PaymentEventConsumer {
             } else {
                 log.info("이미 취소된 예약입니다: reservationId={}", event.getReservationId());
             }
+
+            acknowledgment.acknowledge();
         } catch (Exception e) {
             log.error("결제 취소 이벤트 처리 중 오류 발생: {}", e.getMessage(), e);
+            acknowledgment.acknowledge();
         }
     }
 }
