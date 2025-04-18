@@ -4,6 +4,7 @@ import com.carenest.business.common.event.payment.PaymentCancelledEvent;
 import com.carenest.business.common.event.payment.PaymentCompletedEvent;
 import com.carenest.business.reservationservice.application.service.ReservationService;
 import com.carenest.business.reservationservice.domain.model.Reservation;
+import com.carenest.business.reservationservice.domain.model.ReservationStatus;
 import com.carenest.business.reservationservice.domain.repository.ReservationRepository;
 import com.carenest.business.reservationservice.infrastructure.service.ExternalServiceClient;
 import lombok.RequiredArgsConstructor;
@@ -24,78 +25,135 @@ public class PaymentEventConsumer {
     private final ExternalServiceClient externalServiceClient;
 
     @Transactional
-    @KafkaListener(topics = "#{T(com.carenest.business.reservationservice.infrastructure.kafka.KafkaTopic).PAYMENT_COMPLETED.getTopicName()}",
+    @KafkaListener(
+            topics = "payment-completed",
             groupId = "reservation-service-group",
-            containerFactory = "kafkaListenerContainerFactory")
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void consumePaymentCompletedEvent(PaymentCompletedEvent event) {
         log.info("결제 완료 이벤트 수신: paymentId={}, reservationId={}",
                 event.getPaymentId(), event.getReservationId());
 
         try {
+            if (event.getReservationId() == null) {
+                log.error("결제 완료 이벤트에 예약 ID가 없음");
+                return;
+            }
+
+            // 예약 정보 조회
+            Optional<Reservation> reservationOpt = reservationRepository.findById(event.getReservationId());
+
+            if (reservationOpt.isEmpty()) {
+                log.error("예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
+                return;
+            }
+
+            Reservation reservation = reservationOpt.get();
+
+            // 이미 결제 정보가 연결된 경우 체크
+            if (reservation.getPaymentId() != null &&
+                    reservation.getPaymentId().equals(event.getPaymentId())) {
+                log.info("이미 결제 정보가 연결되어 있음: reservationId={}, paymentId={}",
+                        reservation.getReservationId(), reservation.getPaymentId());
+                return;
+            }
+
             // 결제 완료 시 예약 상태 업데이트 및 결제 정보 연결
             reservationService.linkPayment(event.getReservationId(), event.getPaymentId());
             log.info("결제 정보 연결 완료: reservationId={}, paymentId={}",
                     event.getReservationId(), event.getPaymentId());
 
-            // 간병인에게 수락 요청 알림 전송
-            Optional<Reservation> reservationOpt = reservationRepository.findById(event.getReservationId());
-            if (reservationOpt.isPresent()) {
-                Reservation reservation = reservationOpt.get();
-                String notificationMsg = String.format(
-                        "새로운 예약이 들어왔습니다. 예약번호: %s, 시작일시: %s, 종료일시: %s. 확인 후 수락해주세요.",
-                        reservation.getReservationId(),
-                        reservation.getStartedAt(),
-                        reservation.getEndedAt()
-                );
-                externalServiceClient.sendReservationCreatedNotification(
-                        reservation.getCaregiverId(), notificationMsg);
+            // 결제 완료 후 간병인에게 새 예약 알림 전송
+            reservation = reservationRepository.findById(event.getReservationId()).get(); // 최신 상태로 다시 조회
 
-                log.info("간병인에게 새 예약 알림 전송 완료: caregiverId={}", reservation.getCaregiverId());
-            }
+            String notificationMsg = String.format(
+                    "새로운 예약이 들어왔습니다. 예약번호: %s, 환자명: %s, 시작일시: %s, 종료일시: %s. 확인 후 수락해주세요.",
+                    reservation.getReservationId(),
+                    reservation.getPatientName(),
+                    reservation.getStartedAt(),
+                    reservation.getEndedAt()
+            );
+
+            externalServiceClient.sendReservationCreatedNotification(
+                    reservation.getCaregiverId(), notificationMsg);
+
+            log.info("간병인에게 새 예약 알림 전송 완료: caregiverId={}", reservation.getCaregiverId());
+
+            // 보호자에게도 결제 완료 알림 발송
+            String guardianMsg = String.format(
+                    "결제가 완료되었습니다. 예약번호: %s, 금액: %s원, 간병인의 예약 수락을 기다리고 있습니다.",
+                    reservation.getReservationId(),
+                    reservation.getTotalAmount()
+            );
+
+            externalServiceClient.sendPaymentCompletedNotification(
+                    reservation.getGuardianId(), guardianMsg);
+
+            log.info("보호자에게 결제 완료 알림 전송 완료: guardianId={}", reservation.getGuardianId());
+
         } catch (Exception e) {
             log.error("결제 완료 이벤트 처리 중 오류 발생: {}", e.getMessage(), e);
         }
     }
 
     @Transactional
-    @KafkaListener(topics = "#{T(com.carenest.business.reservationservice.infrastructure.kafka.KafkaTopic).PAYMENT_CANCELLED.getTopicName()}",
+    @KafkaListener(
+            topics = "payment-cancelled",
             groupId = "reservation-service-group",
-            containerFactory = "kafkaListenerContainerFactory")
+            containerFactory = "kafkaListenerContainerFactory"
+    )
     public void consumePaymentCancelledEvent(PaymentCancelledEvent event) {
         log.info("결제 취소 이벤트 수신: paymentId={}, reservationId={}",
                 event.getPaymentId(), event.getReservationId());
 
         try {
-            // 결제 취소 시 예약도 취소 상태로 변경
+            if (event.getReservationId() == null) {
+                log.error("결제 취소 이벤트에 예약 ID가 없음");
+                return;
+            }
+
+            // 예약 정보 조회
             Optional<Reservation> optionalReservation = reservationRepository.findById(event.getReservationId());
 
-            if (optionalReservation.isPresent()) {
-                Reservation reservation = optionalReservation.get();
+            if (optionalReservation.isEmpty()) {
+                log.error("예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
+                return;
+            }
 
-                // 예약이 이미 취소 상태가 아닌 경우에만 처리
-                if (reservation.getStatus() != com.carenest.business.reservationservice.domain.model.ReservationStatus.CANCELLED) {
-                    reservationService.cancelReservation(
-                            event.getReservationId(),
-                            "결제 취소로 인한 자동 예약 취소",
-                            "결제 취소 이유: " + event.getCancelReason()
-                    );
-                    log.info("결제 취소로 인한 예약 취소 완료: reservationId={}", event.getReservationId());
+            Reservation reservation = optionalReservation.get();
 
-                    // 보호자에게도 예약 취소 알림 전송
-                    String cancelMsg = String.format(
-                            "결제 취소로 인해 예약이 자동으로 취소되었습니다. 예약번호: %s, 취소 사유: %s",
-                            event.getReservationId(),
-                            event.getCancelReason()
-                    );
-                    externalServiceClient.sendReservationCreatedNotification(
-                            event.getGuardianId(), cancelMsg);
+            // 예약이 이미 취소 상태가 아닌 경우에만 처리
+            if (reservation.getStatus() != ReservationStatus.CANCELLED) {
+                // 결제 취소로 인한 예약 취소 처리
+                reservationService.cancelReservation(
+                        event.getReservationId(),
+                        "결제 취소로 인한 자동 예약 취소",
+                        event.getCancelReason() != null ?
+                                "결제 취소 이유: " + event.getCancelReason() : "결제 취소"
+                );
 
-                    log.info("보호자에게 예약 취소 알림 전송 완료: guardianId={}", event.getGuardianId());
-                } else {
-                    log.info("이미 취소된 예약입니다: reservationId={}", event.getReservationId());
-                }
+                log.info("결제 취소로 인한 예약 취소 완료: reservationId={}", event.getReservationId());
+
+                // 상태 변경 알림 발송
+                String cancelMsg = String.format(
+                        "결제 취소로 인해 예약이 자동으로 취소되었습니다. 예약번호: %s, 취소 사유: %s",
+                        event.getReservationId(),
+                        event.getCancelReason() != null ? event.getCancelReason() : "결제 취소"
+                );
+
+                // 보호자에게 알림
+                externalServiceClient.sendReservationCreatedNotification(
+                        event.getGuardianId(), cancelMsg);
+
+                log.info("보호자에게 예약 취소 알림 전송 완료: guardianId={}", event.getGuardianId());
+
+                // 간병인에게 알림
+                externalServiceClient.sendReservationCreatedNotification(
+                        event.getCaregiverId(), cancelMsg);
+
+                log.info("간병인에게 예약 취소 알림 전송 완료: caregiverId={}", event.getCaregiverId());
             } else {
-                log.warn("결제 취소 이벤트 처리 중 예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
+                log.info("이미 취소된 예약입니다: reservationId={}", event.getReservationId());
             }
         } catch (Exception e) {
             log.error("결제 취소 이벤트 처리 중 오류 발생: {}", e.getMessage(), e);
