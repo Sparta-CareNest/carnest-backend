@@ -107,13 +107,12 @@ public class CaregiverController {
 		@PathVariable UUID caregiverId,
 		@AuthUser AuthUserInfo authUserInfo
 	){
-		// Admin, Caregiver 권한이 아니면 거부
-		if(!(authUserInfo.getRole().equals(UserRole.CAREGIVER)) &&
-			authUserInfo.getRole().equals(UserRole.ADMIN)){
+		// Caregiver 권한이 아니면 거부
+		if(!authUserInfo.getRole().equals(UserRole.CAREGIVER)) {
 			throw new BaseException(CommonErrorCode.FORBIDDEN);
 		}
 
-		caregiverService.deleteCaregiver(caregiverId);
+		caregiverService.deleteCaregiver(caregiverId,authUserInfo.getUserId());
 		return ResponseDto.success("간병인 정보가 삭제되었습니다.",null);
 	}
 
