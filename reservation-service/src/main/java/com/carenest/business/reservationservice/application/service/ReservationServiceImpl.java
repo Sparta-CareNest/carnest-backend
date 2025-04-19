@@ -3,9 +3,9 @@ package com.carenest.business.reservationservice.application.service;
 import com.carenest.business.reservationservice.application.dto.request.ReservationCreateRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationSearchRequest;
 import com.carenest.business.reservationservice.application.dto.request.ReservationUpdateRequest;
+import com.carenest.business.reservationservice.domain.model.PaymentStatus;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.model.ReservationStatus;
-import com.carenest.business.reservationservice.domain.model.PaymentStatus;
 import com.carenest.business.reservationservice.domain.repository.ReservationRepository;
 import com.carenest.business.reservationservice.domain.service.ReservationDomainService;
 import com.carenest.business.reservationservice.exception.*;
@@ -294,25 +294,32 @@ public class ReservationServiceImpl implements ReservationService {
 
             notificationEventProducer.sendNotificationEvent(
                     updatedReservation.getGuardianId(),
-                    "RESERVATION_ACCEPTED",
+                    "RESERVATION_STATUS_CHANGED",  // 명확한 이벤트 타입 사용
                     guardianMsg
             );
 
-            String caregiverMsg = String.format(
-                    "예약 수락이 완료되었습니다. 예약번호: %s, 환자명: %s, 시작일시: %s",
-                    updatedReservation.getReservationId(),
-                    updatedReservation.getPatientName(),
-                    updatedReservation.getStartedAt()
-            );
+            log.info("보호자 예약 수락 알림 전송 완료: guardianId={}", updatedReservation.getGuardianId());
 
-            notificationEventProducer.sendNotificationEvent(
-                    updatedReservation.getCaregiverId(),
-                    "RESERVATION_CONFIRMATION",
-                    caregiverMsg
-            );
+            // 간병인에게도 알림 전송
+            try {
+                String caregiverMsg = String.format(
+                        "예약 수락이 완료되었습니다. 예약번호: %s, 환자명: %s, 시작일시: %s",
+                        updatedReservation.getReservationId(),
+                        updatedReservation.getPatientName(),
+                        updatedReservation.getStartedAt()
+                );
 
-            log.info("Kafka 알림 전송 완료: guardianId={}, caregiverId={}",
-                    updatedReservation.getGuardianId(), updatedReservation.getCaregiverId());
+                notificationEventProducer.sendNotificationEvent(
+                        updatedReservation.getCaregiverId(),
+                        "RESERVATION_STATUS_CHANGED",
+                        caregiverMsg
+                );
+
+                log.info("간병인 예약 수락 알림 전송 완료: caregiverId={}", updatedReservation.getCaregiverId());
+            } catch (Exception e) {
+                log.error("간병인 알림 전송 실패: caregiverId={}, error={}",
+                        updatedReservation.getCaregiverId(), e.getMessage(), e);
+            }
 
         } catch (Exception e) {
             log.error("예약 수락 알림 Kafka 전송 실패", e);
@@ -320,6 +327,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         try {
             reservationEventProducer.sendReservationStatusChangedEvent(updatedReservation, previousStatus);
+            log.info("예약 상태 변경 이벤트 발행 완료: {} -> {}", previousStatus, updatedReservation.getStatus());
         } catch (Exception e) {
             log.error("예약 상태 변경 이벤트 발행 실패", e);
         }
