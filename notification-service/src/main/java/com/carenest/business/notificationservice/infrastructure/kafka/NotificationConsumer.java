@@ -72,19 +72,28 @@ public class NotificationConsumer {
 
             String content = createStatusChangeContent(reservationId, previousStatus, newStatus, reason);
 
-            notificationService.createNotificationWithType(
-                    new NotificationCreateRequestDto(guardianId, content),
-                    NotificationType.RESERVATION_STATUS_CHANGED
-            );
+            try {
+                NotificationType notificationType = getNotificationTypeForStatus(newStatus);
+                notificationService.createNotificationWithType(
+                        new NotificationCreateRequestDto(guardianId, content),
+                        notificationType
+                );
+                log.info("보호자 상태 변경 알림 전송 완료: guardianId={}, status={}", guardianId, newStatus);
+            } catch (Exception e) {
+                log.error("보호자 알림 전송 실패: guardianId={}, error={}", guardianId, e.getMessage(), e);
+            }
 
-            log.info("보호자 상태 변경 알림 전송 완료: guardianId={}", guardianId);
+            try {
+                NotificationType notificationType = getNotificationTypeForStatus(newStatus);
+                notificationService.createNotificationWithType(
+                        new NotificationCreateRequestDto(caregiverId, content),
+                        notificationType
+                );
+                log.info("간병인 상태 변경 알림 전송 완료: caregiverId={}, status={}", caregiverId, newStatus);
+            } catch (Exception e) {
+                log.error("간병인 알림 전송 실패: caregiverId={}, error={}", caregiverId, e.getMessage(), e);
+            }
 
-            notificationService.createNotificationWithType(
-                    new NotificationCreateRequestDto(caregiverId, content),
-                    NotificationType.RESERVATION_STATUS_CHANGED
-            );
-
-            log.info("간병인 상태 변경 알림 전송 완료: caregiverId={}", caregiverId);
         } catch (Exception e) {
             log.error("예약 상태 변경 알림 처리 중 예외 발생: {}", e.getMessage(), e);
         }
@@ -214,6 +223,20 @@ public class NotificationConsumer {
             log.info("간병인 예약 취소 알림 전송 완료: caregiverId={}", event.getCaregiverId());
         } catch (Exception e) {
             log.error("예약 취소 알림 처리 중 예외 발생: {}", e.getMessage(), e);
+        }
+    }
+
+    private NotificationType getNotificationTypeForStatus(String status) {
+        if ("CONFIRMED".equals(status)) {
+            return NotificationType.RESERVATION_STATUS_CHANGED;
+        } else if ("REJECTED".equals(status)) {
+            return NotificationType.RESERVATION_CANCELLED;
+        } else if ("COMPLETED".equals(status)) {
+            return NotificationType.SETTLEMENT_COMPLETE;
+        } else if ("PENDING_ACCEPTANCE".equals(status)) {
+            return NotificationType.PAYMENT_SUCCESS;
+        } else {
+            return NotificationType.RESERVATION_STATUS_CHANGED;
         }
     }
 

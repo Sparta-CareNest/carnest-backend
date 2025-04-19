@@ -21,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 public class ReservationEventProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    
+
     public void sendReservationCreatedEvent(Reservation reservation) {
         if (reservation == null) {
             log.error("예약 생성 이벤트 발행 실패: reservation 객체가 null입니다");
@@ -117,6 +117,9 @@ public class ReservationEventProducer {
             return;
         }
 
+        log.info("예약 상태 변경 이벤트 발행 시작: reservationId={}, 상태 변경={}→{}",
+                reservation.getReservationId(), previousStatus, reservation.getStatus());
+
         ReservationStatusChangedEvent event = ReservationStatusChangedEvent.builder()
                 .reservationId(reservation.getReservationId())
                 .guardianId(reservation.getGuardianId())
@@ -151,7 +154,8 @@ public class ReservationEventProducer {
                         result.getRecordMetadata().partition(),
                         result.getRecordMetadata().offset());
             } else {
-                log.error("{} 발행 실패: id={}", eventType, id, ex);
+                log.error("{} 발행 실패: id={}, 오류={}", eventType, id, ex.getMessage());
+                log.debug("Stack trace:", ex);
             }
         });
     }
@@ -165,7 +169,7 @@ public class ReservationEventProducer {
             case PENDING_ACCEPTANCE:
                 return "결제 완료";
             case CONFIRMED:
-                return "간병인 수락";
+                return "간병인 수락 완료";
             case REJECTED:
                 return reservation.getRejectionReason() != null ?
                         reservation.getRejectionReason() : "거절 사유 없음";
