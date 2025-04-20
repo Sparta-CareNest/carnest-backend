@@ -1,5 +1,6 @@
 package com.carenest.business.paymentservice.infrastructure.kafka;
 
+import com.carenest.business.common.event.caregiver.CaregiverPendingEvent;
 import com.carenest.business.common.event.payment.PaymentCancelledEvent;
 import com.carenest.business.paymentservice.domain.model.Payment;
 import lombok.RequiredArgsConstructor;
@@ -87,4 +88,34 @@ public class PaymentEventProducer {
                     payment.getPaymentId(), e.getMessage(), e);
         }
     }
+
+	public void sendCaregiverPendingEvent(Payment payment) {
+        try{
+
+            log.info("간병인 승인/거절 이벤트 발행 시작: reservationId={}, caregiverId={}",
+                payment.getReservationId(), payment.getCaregiverId());
+
+            CaregiverPendingEvent event = CaregiverPendingEvent.builder()
+                .reservationId(payment.getReservationId())
+                .caregiverId(payment.getCaregiverId())
+                .message("새 예약이 수락 대기 상태입니다. 예약 ID: " + payment.getReservationId())
+                .build();
+
+            String key = payment.getPaymentId().toString();
+            CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send("caregiver-accept", key, event);
+
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
+                    log.info("간병인 승인/거절 이벤트 발행 성공: reservationId={}, caregiverId={}",
+                        payment.getReservationId(), payment.getCaregiverId());
+                } else {
+                    log.error("간병인 승인/거절 이벤트 발행 실패: paymentId={}", payment.getPaymentId(), ex);
+                }
+            });
+
+        }catch (Exception e){
+            log.error("간병인 승인/거절 이벤트 생성 중 예외 발생: paymentId={}, 에러={}",
+                payment.getPaymentId(), e.getMessage(), e);
+        }
+	}
 }
