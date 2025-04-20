@@ -11,7 +11,7 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import com.carenest.business.common.event.caregiver.CaregiverRatingMessage;
+import com.carenest.business.common.event.caregiver.CaregiverRatingEvent;
 
 @Component
 @Slf4j
@@ -23,7 +23,7 @@ public class CaregiverRatingProducer {
 
     public void sendReviewUpdateEvent(UUID caregiverId, Double rating){
 
-        CaregiverRatingMessage message = CaregiverRatingMessage.builder()
+        CaregiverRatingEvent message = CaregiverRatingEvent.builder()
             .caregiverId(caregiverId)
             .rating(rating)
             .build();

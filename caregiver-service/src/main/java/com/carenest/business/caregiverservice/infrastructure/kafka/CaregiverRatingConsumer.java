@@ -4,7 +4,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import com.carenest.business.caregiverservice.application.service.CaregiverConsumerService;
-import com.carenest.business.common.event.caregiver.CaregiverRatingMessage;
+import com.carenest.business.common.event.caregiver.CaregiverRatingEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class CaregiverRatingConsumer {
 		groupId = "review-service-group",
 		containerFactory = "kafkaListenerConsumerContainerFactory"
 	)
-	public void handleCaregiverRatingUpdate(CaregiverRatingMessage message) {
+	public void handleCaregiverRatingUpdate(CaregiverRatingEvent message) {
 		log.info("받은 메시지: {}", message);
 		caregiverConsumerService.handleCaregiverRatingUpdate(message);
 	}

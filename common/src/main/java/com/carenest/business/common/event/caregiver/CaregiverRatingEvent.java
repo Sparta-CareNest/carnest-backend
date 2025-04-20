@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class CaregiverRatingMessage extends BaseEvent {
+public class CaregiverRatingEvent extends BaseEvent {
 	private UUID caregiverId;
 	private Double rating;
 
 	@Builder
-	public CaregiverRatingMessage(UUID caregiverId, Double rating) {
+	public CaregiverRatingEvent(UUID caregiverId, Double rating) {
 		super("REVIEW_RATING_UPDATE");
 		this.caregiverId = caregiverId;
 		this.rating = rating;

@@ -14,7 +14,7 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.carenest.business.common.event.caregiver.CaregiverRatingMessage;
+import com.carenest.business.common.event.caregiver.CaregiverRatingEvent;
 
 @EnableKafka
 @Configuration
@@ -25,7 +25,7 @@ public class ConsumerKafkaConfig {
 	private String bootstrapServers;
 
 	@Bean
-	public ConsumerFactory<String, CaregiverRatingMessage> consumerFactory() {
+	public ConsumerFactory<String, CaregiverRatingEvent> consumerFactory() {
 		Map<String, Object> props = new HashMap<>();
 		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 		props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -36,8 +36,8 @@ public class ConsumerKafkaConfig {
 	}
 
 	@Bean
-	public ConcurrentKafkaListenerContainerFactory<String, CaregiverRatingMessage> kafkaListenerConsumerContainerFactory() {
-		var factory = new ConcurrentKafkaListenerContainerFactory<String, CaregiverRatingMessage>();
+	public ConcurrentKafkaListenerContainerFactory<String, CaregiverRatingEvent> kafkaListenerConsumerContainerFactory() {
+		var factory = new ConcurrentKafkaListenerContainerFactory<String, CaregiverRatingEvent>();
 		factory.setConsumerFactory(consumerFactory());
 		return factory;
 	}

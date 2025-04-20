@@ -1,7 +1,7 @@
 package com.carenest.business.caregiverservice.application.service;
 
-import com.carenest.business.common.event.caregiver.CaregiverRatingMessage;
+import com.carenest.business.common.event.caregiver.CaregiverRatingEvent;
 
 public interface CaregiverConsumerService{
-	void handleCaregiverRatingUpdate(CaregiverRatingMessage message);
+	void handleCaregiverRatingUpdate(CaregiverRatingEvent message);
 }
