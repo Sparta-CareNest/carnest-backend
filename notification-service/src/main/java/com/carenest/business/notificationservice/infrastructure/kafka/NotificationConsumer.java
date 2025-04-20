@@ -271,4 +271,41 @@ public class NotificationConsumer {
             log.error("간병인 알림 전송 실패: caregiverId={}, error={}", event.getCaregiverId(), e.getMessage());
         }
     }
+
+    @KafkaListener(
+            topics = "settlement-completion-notification",
+            groupId = "notification-group",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void handleSettlementCompletionNotification(String notificationMessage) {
+        try {
+            log.info("정산 완료 알림 이벤트 수신: 메시지={}", notificationMessage);
+
+            String careWorkerId = extractCareWorkerIdFromMessage(notificationMessage);
+            UUID receiverId = UUID.fromString(careWorkerId);
+
+            // 알림 저장 처리
+            notificationService.createNotificationWithType(
+                    new NotificationCreateRequestDto(receiverId, notificationMessage),
+                    NotificationType.SETTLEMENT_COMPLETE
+            );
+
+            log.info("정산 완료 알림 저장 완료");
+
+        } catch (Exception e) {
+            log.error("정산 완료 알림 처리 실패: {}", e.getMessage(), e);
+        }
+    }
+
+    private String extractCareWorkerIdFromMessage(String message) {
+        // 예시 메시지에서 "간병인 ID: " 뒤의 값을 추출하는 로직
+        // 실제 메시지 포맷에 맞게 수정
+        String[] parts = message.split(",");  // 메시지를 쉼표로 구분
+        for (String part : parts) {
+            if (part.contains("간병인 ID:")) {
+                return part.split(":")[1].trim();  // "간병인 ID: 12345"에서 "12345"를 추출
+            }
+        }
+        throw new IllegalArgumentException("간병인 ID를 메시지에서 추출할 수 없습니다.");
+    }
 }
