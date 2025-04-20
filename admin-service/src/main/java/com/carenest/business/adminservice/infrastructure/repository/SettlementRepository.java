@@ -1,6 +1,6 @@
-package com.carenest.business.adminservice.infrastructure;
+package com.carenest.business.adminservice.infrastructure.repository;
 
-import com.carenest.business.adminservice.domain.Settlement;
+import com.carenest.business.adminservice.domain.model.Settlement;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,4 +1,4 @@
-package com.carenest.business.adminservice.domain;
+package com.carenest.business.adminservice.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

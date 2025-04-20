@@ -1,4 +1,4 @@
-package com.carenest.business.adminservice.presentation;
+package com.carenest.business.adminservice.presentation.controller;
 
 import com.carenest.business.adminservice.application.dto.request.SettlementRequestDto;
 import com.carenest.business.adminservice.application.dto.response.SettlementResponseDto;

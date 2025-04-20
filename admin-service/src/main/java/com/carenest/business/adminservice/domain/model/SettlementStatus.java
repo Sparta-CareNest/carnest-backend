@@ -1,4 +1,4 @@
-package com.carenest.business.adminservice.domain;
+package com.carenest.business.adminservice.domain.model;
 
 public enum SettlementStatus {
     PENDING,
