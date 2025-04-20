@@ -1,7 +1,7 @@
 package com.carenest.business.adminservice.presentation;
 
 import com.carenest.business.adminservice.application.dto.response.SettlementResponseDto;
-import com.carenest.business.adminservice.domain.Settlement;
+import com.carenest.business.adminservice.domain.model.Settlement;
 import org.springframework.stereotype.Component;
 
 @Component
