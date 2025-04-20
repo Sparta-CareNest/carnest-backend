@@ -35,6 +35,12 @@ public class GatewayConfig {
                 .route("reservation-service", r -> r.path("/api/v1/reservations/**")
                         .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://reservation-service"))
+                .route("chat-service", r -> r.path("/api/v1/chats/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://chat-service"))
+                .route("admin-service", r -> r.path("/api/v1/admin/settlements/**")
+                        .filters(f -> f.filter(jwtAuthFilter))
+                        .uri("lb://admin-service"))
                 .build();
     }
 }
