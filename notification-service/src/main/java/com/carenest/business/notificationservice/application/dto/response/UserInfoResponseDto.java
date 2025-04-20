@@ -1,14 +1,13 @@
 package com.carenest.business.notificationservice.application.dto.response;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.UUID;
 
 @Getter
-@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserInfoResponseDto {
     private UUID userId;
     private String nickname;
