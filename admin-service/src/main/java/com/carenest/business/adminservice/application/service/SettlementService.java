@@ -1,10 +1,13 @@
 package com.carenest.business.adminservice.application.service;
 
 import com.carenest.business.adminservice.application.dto.response.SettlementResponseDto;
-import com.carenest.business.adminservice.domain.Settlement;
-import com.carenest.business.adminservice.domain.SettlementStatus;
-import com.carenest.business.adminservice.infrastructure.SettlementRepository;
+import com.carenest.business.adminservice.domain.model.Settlement;
+import com.carenest.business.adminservice.domain.model.SettlementStatus;
+import com.carenest.business.adminservice.infrastructure.dto.SettlementCreatedEventDto;
+import com.carenest.business.adminservice.infrastructure.kafka.SettlementKafkaProducer;
+import com.carenest.business.adminservice.infrastructure.repository.SettlementRepository;
 import com.carenest.business.adminservice.presentation.SettlementMapper;
+import com.carenest.business.common.event.admin.SettlementCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +22,15 @@ import java.util.UUID;
 public class SettlementService {
     private final SettlementRepository settlementRepository;
     private final SettlementMapper settlementMapper;
+    private final SettlementKafkaProducer settlementKafkaProducer;
 
     // 정산 생성
     @Transactional
-    public SettlementResponseDto createSettlement(UUID careWorkerId, BigDecimal amount, LocalDate periodStart, LocalDate periodEnd) {
+    public SettlementResponseDto createSettlement(
+            UUID careWorkerId,
+            BigDecimal amount,
+            LocalDate periodStart,
+            LocalDate periodEnd) {
         Settlement settlement = Settlement.builder()
                 .careWorkerId(careWorkerId)
                 .amount(amount)
@@ -34,6 +42,18 @@ public class SettlementService {
 
         Settlement savedSettlement = settlementRepository.save(settlement);
 
+        // 이벤트 발해
+        SettlementCreatedEvent event = new SettlementCreatedEvent(
+                savedSettlement.getId(),
+                savedSettlement.getCareWorkerId(),
+                savedSettlement.getAmount(),
+                savedSettlement.getPeriodStart(),
+                savedSettlement.getPeriodEnd(),
+                savedSettlement.getSettledAt()
+        );
+
+        settlementKafkaProducer.sendSettlementNotification("settlement-completion-notification", event);
+
         return settlementMapper.toDto(savedSettlement);
     }
 
@@ -44,5 +64,26 @@ public class SettlementService {
         return settlements.stream()
                 .map(settlementMapper::toDto)
                 .toList();
+    }
+
+    // Kafka 메시지를 받을 때 사용하는 메서드
+    @Transactional
+    public Settlement createSettlementFromKafka(
+            UUID careWorkerId,
+            BigDecimal amount,
+            LocalDate periodStart,
+            LocalDate periodEnd,
+            LocalDate settledAt) {
+        // Kafka에서 받은 데이터로 Settlement 생성 (여기서는 이벤트 발행 없이 DB만 저장)
+        Settlement settlement = Settlement.builder()
+                .careWorkerId(careWorkerId)
+                .amount(amount)
+                .periodStart(periodStart)
+                .periodEnd(periodEnd)
+                .settledAt(settledAt)
+                .status(SettlementStatus.PENDING)
+                .build();
+
+        return settlementRepository.save(settlement); // 이벤트 발행 없이 DB에만 저장
     }
 }
