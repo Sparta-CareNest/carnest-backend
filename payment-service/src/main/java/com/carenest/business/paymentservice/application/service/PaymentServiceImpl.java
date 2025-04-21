@@ -1,5 +1,19 @@
 package com.carenest.business.paymentservice.application.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.carenest.business.paymentservice.application.dto.request.PaymentCompleteRequest;
 import com.carenest.business.paymentservice.application.dto.request.PaymentCreateRequest;
 import com.carenest.business.paymentservice.application.dto.request.RefundRequest;
@@ -11,7 +25,11 @@ import com.carenest.business.paymentservice.domain.model.Payment;
 import com.carenest.business.paymentservice.domain.model.PaymentHistory;
 import com.carenest.business.paymentservice.domain.model.PaymentStatus;
 import com.carenest.business.paymentservice.domain.service.PaymentDomainService;
-import com.carenest.business.paymentservice.exception.*;
+import com.carenest.business.paymentservice.exception.DuplicatePaymentException;
+import com.carenest.business.paymentservice.exception.InvalidPaymentStatusException;
+import com.carenest.business.paymentservice.exception.PaymentErrorCode;
+import com.carenest.business.paymentservice.exception.PaymentException;
+import com.carenest.business.paymentservice.exception.PaymentNotFoundException;
 import com.carenest.business.paymentservice.infrastructure.client.ReservationInternalClient;
 import com.carenest.business.paymentservice.infrastructure.client.UserInternalClient;
 import com.carenest.business.paymentservice.infrastructure.client.dto.response.ReservationDetailsResponseDto;
@@ -22,16 +40,9 @@ import com.carenest.business.paymentservice.infrastructure.repository.PaymentHis
 import com.carenest.business.paymentservice.infrastructure.repository.PaymentRepository;
 import com.carenest.business.paymentservice.infrastructure.service.NotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.*;
 
 @Slf4j
 @Service
@@ -258,6 +269,16 @@ public class PaymentServiceImpl implements PaymentService {
                         savedPayment.getPaymentId(), savedPayment.getReservationId());
             } catch (Exception e) {
                 log.error("결제 완료 이벤트 발행 실패: paymentId={}", paymentId, e);
+            }
+
+            // 간병인 수락/거절 이벤트
+            try {
+                paymentEventProducer.sendCaregiverPendingEvent(savedPayment);
+                log.info("간병인 수락 대기 이벤트 발행 완료: reservationId={}, caregiverId={}",
+                    savedPayment.getReservationId(), savedPayment.getCaregiverId());
+            } catch (Exception e) {
+                log.error("간병인 이벤트 발행 실패: reservationId={}, 에러={}",
+                    savedPayment.getReservationId(), e.getMessage(), e);
             }
 
             log.info("결제 완료 처리 성공: paymentId={}, reservationId={}",

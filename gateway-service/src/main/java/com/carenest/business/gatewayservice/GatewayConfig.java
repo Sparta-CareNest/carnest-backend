@@ -26,7 +26,7 @@ public class GatewayConfig {
                 .route("notification-service", r -> r.path("/api/v1/notifications/**")
                         .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://notification-service"))
-                .route("caregiver-service", r -> r.path("/api/v1/caregivers/**","/internal/v1/caregivers/**")
+                .route("caregiver-service", r -> r.path("/api/v1/caregivers/**","/api/v1/caregiver-approvals/**")
                     .filters(f -> f.filter(jwtAuthFilter))
                         .uri("lb://caregiver-service"))
                 .route("payment-service", r -> r.path("/api/v1/payments/**")
