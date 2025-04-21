@@ -52,20 +52,17 @@ public class NotificationController {
         return ResponseDto.success(successMessage, responseDto);
     }
 
-    // 4. 알림 목록 조회, 읽음/안읽음 필터
-    @GetMapping("/{receiverId}")
+    // 4. 알림 목록 조회, 읽음/안읽음 필터 -> 로그인한 토큰 사용자로 바꾸기
+    @GetMapping
     public ResponseDto<List<NotificationResponseDto>> getNotifications(
-            @PathVariable("receiverId") UUID receiverId,
             @RequestParam(value = "isRead", required = false) Boolean isRead,
             @AuthUser AuthUserInfo authUserInfo
     ) {
-        log.info("[알림 목록 조회 요청] receiverId={}, isRead={}, 요청자={}",
-                receiverId, isRead, authUserInfo.getUserId());
-        // 요청한 알림의 receiverId가 현재 인증된 사용자와 일치하는지 확인
-        AuthValidationUtil.validateUserAccess(receiverId, authUserInfo.getUserId());
+        UUID userId = authUserInfo.getUserId();
+        log.info("[알림 목록 조회 요청] isRead={}, 요청자={}", isRead, userId);
 
         List<NotificationResponseDto> notifications =
-                notificationService.getNotificationsByReceiverId(receiverId, isRead);
+                notificationService.getNotificationsByReceiverId(userId, isRead);
         return ResponseDto.success("알림 목록 조회 성공", notifications);
     }
 
