@@ -37,6 +37,11 @@ public class UserService {
 
     // 회원가입
     public SignupResponseDTO signup(SignupRequestDTO request) {
+        // ADMIN 권한으로 가입 시도 차단
+        if (request.getRole() == UserRole.ADMIN) {
+            throw new BaseException(UserErrorCode.NOT_ALLOWED_ROLE);
+        }
+
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BaseException(UserErrorCode.DUPLICATED_EMAIL);
@@ -71,6 +76,11 @@ public class UserService {
         // 사용자명으로 사용자 찾기
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BaseException(UserErrorCode.USERNAME_NOT_FOUND));
+
+        // 탈퇴한 유저 확인
+        if (user.getIsDeleted()) {
+            throw new BaseException(UserErrorCode.DELETED_USER);
+        }
 
         // 비밀번호 일치 확인 (암호화된 비밀번호 비교)
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
