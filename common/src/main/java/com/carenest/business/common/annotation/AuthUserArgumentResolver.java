@@ -1,5 +1,7 @@
 package com.carenest.business.common.annotation;
 
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.core.MethodParameter;
@@ -29,7 +31,7 @@ public class AuthUserArgumentResolver implements HandlerMethodArgumentResolver {
         String encodedHeader = request.getHeader("AuthUser");
 
         if (encodedHeader == null) {
-            throw new IllegalStateException("AuthUser 헤더가 누락되었습니다.");
+            throw new BaseException(CommonErrorCode.MISSING_AUTH_HEADER);
         }
 
         byte[] decoded = Base64.getDecoder().decode(encodedHeader);
