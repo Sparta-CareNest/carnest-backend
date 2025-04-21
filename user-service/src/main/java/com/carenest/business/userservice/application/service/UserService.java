@@ -1,40 +1,55 @@
 package com.carenest.business.userservice.application.service;
 
+import java.util.Date;
 import java.util.UUID;
 
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 import com.carenest.business.common.model.UserRole;
 import com.carenest.business.userservice.application.dto.request.LoginRequestDTO;
 import com.carenest.business.userservice.application.dto.request.SignupRequestDTO;
 import com.carenest.business.userservice.application.dto.request.UpdateUserRequestDTO;
 import com.carenest.business.userservice.application.dto.response.*;
+import com.carenest.business.userservice.domain.exception.UserErrorCode;
 import com.carenest.business.userservice.domain.model.User;
 import com.carenest.business.userservice.domain.repository.UserRepository;
 import com.carenest.business.userservice.infrastructure.security.JwtUtil;
 import com.carenest.business.common.annotation.AuthUserInfo;
+import com.carenest.business.userservice.infrastructure.security.TokenBlacklistService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.HttpHeaders;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // 회원가입
     public SignupResponseDTO signup(SignupRequestDTO request) {
+        // ADMIN 권한으로 가입 시도 차단
+        if (request.getRole() == UserRole.ADMIN) {
+            throw new BaseException(UserErrorCode.NOT_ALLOWED_ROLE);
+        }
+
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new BaseException(UserErrorCode.DUPLICATED_EMAIL);
         }
 
         // 아이디 중복 확인
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+            throw new BaseException(UserErrorCode.DUPLICATED_USERNAME);
         }
 
         // 비밀번호 암호화
@@ -60,11 +75,16 @@ public class UserService {
     public LoginResponseDTO login(LoginRequestDTO request, HttpServletResponse response) {
         // 사용자명으로 사용자 찾기
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자명입니다."));
+                .orElseThrow(() -> new BaseException(UserErrorCode.USERNAME_NOT_FOUND));
+
+        // 탈퇴한 유저 확인
+        if (user.getIsDeleted()) {
+            throw new BaseException(UserErrorCode.DELETED_USER);
+        }
 
         // 비밀번호 일치 확인 (암호화된 비밀번호 비교)
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            throw new BaseException(UserErrorCode.INVALID_PASSWORD);
         }
 
         // JWT 생성
@@ -74,21 +94,31 @@ public class UserService {
         return LoginResponseDTO.of(accessToken,refreshToken, user);
     }
 
-//    // 로그아웃
-//    @Transactional
-//    public void logout() {
-//        // 현재 인증된 사용자 정보 가져오기 (실제로는 SecurityContext에서 가져옴)
-//        String currentUsername = "현재_로그인한_사용자"; // 예시
-//
-//        // 토큰 무효화 로직 (실제로는 Redis에 블랙리스트 저장 등)
-//        System.out.println(currentUsername + "의 토큰이 무효화되었습니다.");
-//    }
-//
+    // 로그아웃
+    @Transactional
+    public void logout(AuthUserInfo authUserInfo , HttpServletRequest request) {
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BaseException(CommonErrorCode.UNAUTHORIZED);
+            }
+        String accessToken = jwtUtil.substringToken(authHeader);
+        // 토큰에서 만료 시간 추출
+        Date expiration = jwtUtil.getExpiration(accessToken);
+        long now = System.currentTimeMillis();
+        long remainingMillis = expiration.getTime() - now;
+
+        if (remainingMillis > 0) {
+            tokenBlacklistService.blacklistToken(accessToken, remainingMillis);
+            log.info("Access token 블랙리스트 등록 완료: {}", accessToken);
+        }
+        log.info("사용자 {}의 토큰이 무효화되었습니다.", authUserInfo);
+    }
+
     // 내 정보 조회
     public UserInfoResponseDTO getMyInfo(AuthUserInfo authUserInfo) {
 
         User user = userRepository.findById(authUserInfo.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
         return UserInfoResponseDTO.from(user);
     }
@@ -106,7 +136,7 @@ public class UserService {
                                                UpdateUserRequestDTO request) {
 
         User user = userRepository.findById(authUserInfo.getUserId())
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
         User updated = user.toBuilder()
                 .nickname(request.getNickname() != null ? request.getNickname() : user.getNickname())
@@ -124,22 +154,26 @@ public class UserService {
         return userRepository.existsById(id);
 	}
 
-	//
-//    // 회원 탈퇴
-//    @Transactional
-//    public WithdrawalResponseDTO deleteMyAccount() {
-//        // 현재 인증된 사용자 정보 가져오기
-//        String currentUsername = "현재_로그인한_사용자"; // 예시
-//
-//        User user = userRepository.findByUsername(currentUsername)
-//                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-//
-//        // 소프트 딜리트 처리
-//        // 실제 구현 시 User 클래스에 deactivate 메서드 추가 필요
-//        // 또는 BaseEntity에 deletedAt 필드가 있다고 가정
-//        user.setDeletedAt(java.time.LocalDateTime.now());
-//        userRepository.save(user);
-//
-//        return new WithdrawalResponseDTO(true, "회원 탈퇴가 완료되었습니다.");
-//    }
+
+    // 회원 탈퇴
+    @Transactional
+    public void deleteMyAccount(AuthUserInfo authUserInfo, HttpServletRequest request) {
+        User user = userRepository.findById(authUserInfo.getUserId())
+                .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+
+        // 토큰 블랙리스트 처리
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = jwtUtil.substringToken(authHeader);
+            long remainingMillis = jwtUtil.getExpiration(accessToken).getTime() - System.currentTimeMillis();
+
+            if (remainingMillis > 0) {
+                tokenBlacklistService.blacklistToken(accessToken, remainingMillis);
+                log.info("회원 탈퇴 - 토큰 블랙리스트 등록: {}", accessToken);
+            }
+        }
+
+        user.softDelete();
+        userRepository.save(user);
+    }
 }

@@ -1,11 +1,10 @@
 package com.carenest.business.caregiverservice.application.dto.response;
 
-
 import java.util.UUID;
 
 import com.carenest.business.caregiverservice.domain.model.GenderType;
 
-public record CaregiverGetTop10ResponseServiceDTO(
+public record CaregiverGetTop10ResponseServiceDTO (
 	UUID id,
 	UUID userId,
 	String description,
