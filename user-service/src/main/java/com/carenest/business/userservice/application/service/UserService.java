@@ -37,6 +37,11 @@ public class UserService {
 
     // 회원가입
     public SignupResponseDTO signup(SignupRequestDTO request) {
+        // ADMIN 권한으로 가입 시도 차단
+        if (request.getRole() == UserRole.ADMIN) {
+            throw new BaseException(UserErrorCode.NOT_ALLOWED_ROLE);
+        }
+
         // 이메일 중복 확인
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BaseException(UserErrorCode.DUPLICATED_EMAIL);
