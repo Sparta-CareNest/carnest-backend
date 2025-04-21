@@ -1,5 +1,6 @@
 package com.carenest.business.caregiverservice.presentation.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.service.CaregiverService;
+import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.carenest.business.caregiverservice.presentation.dto.mapper.CaregiverPresentationMapper;
 import com.carenest.business.caregiverservice.presentation.dto.response.CaregiverReadResponseDTO;
 import com.carenest.business.caregiverservice.util.PageableUtils;
@@ -76,6 +78,17 @@ public class CaregiverInternalController {
 		Page<CaregiverReadResponseServiceDTO> responseDTO = caregiverService.getCaregiverAll(pageable);
 
 		return ResponseDto.success(presentationMapper.toReadAllResponseDto(responseDTO));
+	}
+
+	@GetMapping("/search")
+	public List<UUID> getCaregiverIdsByFilters(
+		@RequestParam(required = false) String location,
+		@RequestParam(required = false) GenderType gender,
+		@RequestParam(required = false) Integer experienceYears,
+		@RequestParam(required = false) Double rating
+	){
+
+		return caregiverService.getCaregiverIdsByFilters(location, gender, experienceYears, rating);
 	}
 
 

@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 
@@ -113,5 +114,23 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			).fetchOne();
 
 		return Optional.ofNullable(result);
+	}
+
+	@Override
+	public List<Caregiver> getCaregiverIdsByFilters(String location, GenderType gender, Integer experienceYears,
+		Double rating) {
+
+		List<Caregiver> caregivers = jpaQueryFactory
+			.selectFrom(caregiver)
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
+			.where(
+				location != null        ? caregiverCategoryLocation.categoryLocation.name.eq(location) : null,
+				gender   != null        ? caregiver.gender.eq(gender)                                   : null,
+				experienceYears != null ? caregiver.experienceYears.loe(experienceYears)                : null,
+				rating   != null        ? caregiver.rating.loe(rating)                                   : null
+			)
+			.fetch();
+		return caregivers;
 	}
 }
