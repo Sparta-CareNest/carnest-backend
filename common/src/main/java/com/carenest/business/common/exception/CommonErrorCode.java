@@ -14,7 +14,7 @@ public enum CommonErrorCode implements BaseErrorCode {
 	USER_NOT_FOUND("U-003", "사용자 정보를 찾을 수 없습니다.", HttpStatus.UNAUTHORIZED),
 	INVALID_USER_STATUS("U-004", "확인되지 않은 사용자입니다.", HttpStatus.UNAUTHORIZED),
 	INVALID_ROLE("U-005", "해당 작업을 수행할 수 없는 역할입니다.", HttpStatus.FORBIDDEN),
-	MISSING_AUTH_HEADER("C001", "AuthUser 헤더가 누락되었습니다.", HttpStatus.UNAUTHORIZED),
+	MISSING_AUTH_HEADER("C-001", "AuthUser 헤더가 누락되었습니다.", HttpStatus.UNAUTHORIZED),
 	;
 
 	private final String errorCode;
