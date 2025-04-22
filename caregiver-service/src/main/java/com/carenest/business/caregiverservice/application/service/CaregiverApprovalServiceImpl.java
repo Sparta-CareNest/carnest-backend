@@ -11,11 +11,14 @@ import com.carenest.business.caregiverservice.domain.model.CaregiverApproval;
 import com.carenest.business.caregiverservice.exception.CaregiverException;
 import com.carenest.business.caregiverservice.exception.ErrorCode;
 import com.carenest.business.caregiverservice.infrastructure.client.ReservationClient;
+import com.carenest.business.caregiverservice.infrastructure.client.dto.reservation.ReservationAcceptRequest;
 import com.carenest.business.caregiverservice.infrastructure.client.dto.reservation.ReservationResponse;
 import com.carenest.business.caregiverservice.infrastructure.repository.CaregiverApprovalRepository;
 import com.carenest.business.caregiverservice.infrastructure.repository.CaregiverRepository;
 import com.carenest.business.caregiverservice.presentation.dto.response.PendingApprovalResponse;
 import com.carenest.business.common.event.caregiver.CaregiverPendingEvent;
+import com.carenest.business.common.exception.BaseException;
+import com.carenest.business.common.exception.CommonErrorCode;
 
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -75,5 +78,26 @@ public class CaregiverApprovalServiceImpl implements CaregiverApprovalService{
 					throw  new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
 				}
 			}).toList();
+	}
+
+	@Override
+	public void acceptCaregiverReservation(UUID reservationId, ReservationAcceptRequest request, UUID userId) {
+		try {
+
+			// 1. 간병인 정보 조회
+			Caregiver caregiver = caregiverRepository.findByUserId(userId)
+				.orElseThrow(() -> new CaregiverException(ErrorCode.NOT_FOUND));
+
+			// 2. 간병인 검증
+			CaregiverApproval caregiverApproval = caregiverApprovalRepository.findByReservationIdAndCaregiverId(reservationId, caregiver.getId())
+				.orElseThrow(() -> new BaseException(CommonErrorCode.FORBIDDEN));
+
+			reservationClient.acceptReservation(caregiverApproval.getReservationId(),request);
+			log.info("예약 수락 요청이 완료되었습니다.");
+
+		} catch (FeignException e){
+			log.warn("예약 수락 실패: userId={}, error={}", userId, e.getMessage());
+			throw  new CaregiverException(ErrorCode.EXTERNAL_API_ERROR);
+		}
 	}
 }
