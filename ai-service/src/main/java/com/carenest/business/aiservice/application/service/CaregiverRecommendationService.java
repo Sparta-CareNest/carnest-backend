@@ -21,7 +21,7 @@ public class CaregiverRecommendationService {
         CaregiverSearchConditionRequestDto condition = geminiClient.extractConditions(requestDto.getQuery());
 
         return caregiverInternalClient.searchCaregivers(
-                condition.getRegion(),
+                condition.getLocation(),
                 condition.getGender(),
                 condition.getExperienceYears(),
                 condition.getAverageRating()

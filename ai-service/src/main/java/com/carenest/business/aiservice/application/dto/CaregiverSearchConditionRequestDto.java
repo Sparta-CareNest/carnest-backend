@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CaregiverSearchConditionRequestDto {
-    private String region;
+    private String location;
     private String gender;
     private Integer experienceYears;
     private Double averageRating;
