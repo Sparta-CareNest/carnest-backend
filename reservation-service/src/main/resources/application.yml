@@ -8,3 +8,12 @@ spring:
     active: local
   config:
     import: optional:configserver:http://localhost:8888
+
+springdoc:
+  api-docs:
+    version: openapi_3_1
+    enabled: true
+    path: /reservation-service/v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
