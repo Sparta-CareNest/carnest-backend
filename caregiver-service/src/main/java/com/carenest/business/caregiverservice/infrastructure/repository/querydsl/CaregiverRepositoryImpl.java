@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 
@@ -45,9 +46,10 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.limit(pageable.getPageSize());
 
 		// 정렬
-		for(Sort.Order o : pageable.getSort()){
+		for (Sort.Order o : pageable.getSort()) {
 			PathBuilder pathBuilder = new PathBuilder(caregiver.getType(), caregiver.getMetadata());
-			careQuery.orderBy(new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC, pathBuilder.get(o.getProperty())));
+			careQuery.orderBy(
+				new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC, pathBuilder.get(o.getProperty())));
 		}
 
 		List<Caregiver> caregivers = careQuery.fetch();
@@ -62,7 +64,7 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 				caregiver.approvalStatus.eq(true)
 			);
 
-		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());
+		return new PageImpl<>(caregivers, pageable, caregiverCountQuery.fetchOne());
 	}
 
 	@Override
@@ -88,9 +90,10 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.offset(pageable.getOffset())
 			.limit(pageable.getPageSize());
 
-		for(Sort.Order o : pageable.getSort()){
+		for (Sort.Order o : pageable.getSort()) {
 			PathBuilder pathBuilder = new PathBuilder(caregiver.getType(), caregiver.getMetadata());
-			careQuery.orderBy(new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC, pathBuilder.get(o.getProperty())));
+			careQuery.orderBy(
+				new OrderSpecifier(o.isAscending() ? Order.ASC : Order.DESC, pathBuilder.get(o.getProperty())));
 		}
 
 		List<Caregiver> caregivers = careQuery.fetch();
@@ -98,7 +101,7 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.select(caregiver.id.countDistinct())
 			.from(caregiver);
 
-		return new PageImpl<>(caregivers,pageable,caregiverCountQuery.fetchOne());
+		return new PageImpl<>(caregivers, pageable, caregiverCountQuery.fetchOne());
 	}
 
 	@Override
@@ -113,5 +116,24 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			).fetchOne();
 
 		return Optional.ofNullable(result);
+	}
+
+	@Override
+	public List<Caregiver> getCaregiverIdsByFilters(String location, GenderType gender, Integer experienceYears,
+		Double rating) {
+
+		List<Caregiver> caregivers = jpaQueryFactory
+			.selectFrom(caregiver)
+			.leftJoin(caregiver.caregiverCategoryLocations, caregiverCategoryLocation).fetchJoin()
+			.leftJoin(caregiver.caregiverCategoryServices, caregiverCategoryService).fetchJoin()
+			.where(
+				location != null ? caregiverCategoryLocation.categoryLocation.name.eq(location) : null,
+				gender != null ? caregiver.gender.eq(gender) : null,
+				experienceYears != null ? caregiver.experienceYears.loe(experienceYears) : null,
+				rating != null ? caregiver.rating.loe(rating) : null,
+				caregiver.approvalStatus.eq(true)
+			)
+			.fetch();
+		return caregivers;
 	}
 }
