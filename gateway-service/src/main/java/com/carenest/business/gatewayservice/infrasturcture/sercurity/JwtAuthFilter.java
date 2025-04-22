@@ -1,12 +1,10 @@
-package com.carenest.business.gatewayservice;
+package com.carenest.business.gatewayservice.infrasturcture.sercurity;
 
+import com.carenest.business.gatewayservice.application.service.TokenBlacklistService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.http.HttpStatus;

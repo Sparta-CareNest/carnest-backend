@@ -1,4 +1,4 @@
-package com.carenest.business.gatewayservice;
+package com.carenest.business.gatewayservice.application.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;

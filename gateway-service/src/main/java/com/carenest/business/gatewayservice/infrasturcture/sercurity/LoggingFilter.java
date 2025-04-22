@@ -1,4 +1,4 @@
-package com.carenest.business.gatewayservice.filter;
+package com.carenest.business.gatewayservice.infrasturcture.sercurity;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
