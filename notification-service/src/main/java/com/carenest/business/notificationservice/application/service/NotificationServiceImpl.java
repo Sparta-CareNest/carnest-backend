@@ -50,7 +50,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         String content = requestDto.getContent();
         if (content == null || content.isEmpty()) {
-            content = "[" + requestDto.getReceiverId() + "] " + notificationType.getMessage();
+            content = "[" + requestDto.getReceiverId() + "] " + notificationType.getMessageKey();
         }
 
         // 알림 객체 생성
@@ -86,8 +86,16 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public List<NotificationResponseDto> getNotificationsByReceiverId(UUID receiverId) {
+    public List<NotificationResponseDto> getNotificationsByReceiverId(UUID receiverId, Boolean isRead) {
         List<Notification> notifications = notificationRepository.findNotificationsByReceiverId(receiverId);
+
+        if (isRead == null) {
+            // isRead가 null이면 모든 알림을 조회
+            notifications = notificationRepository.findNotificationsByReceiverId(receiverId);
+        } else {
+            // isRead 값에 맞는 알림만 조회
+            notifications = notificationRepository.findNotificationsByReceiverIdAndIsRead(receiverId, isRead);
+        }
 
         return notifications.stream()
                 .map(n -> new NotificationResponseDto(

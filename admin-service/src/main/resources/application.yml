@@ -23,3 +23,10 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     listener:
       ack-mode: MANUAL_IMMEDIATE
+
+
+feign:
+  client:
+    config:
+      payment-service:
+        url: http://payment-service:9040
