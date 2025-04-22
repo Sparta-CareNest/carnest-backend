@@ -18,7 +18,7 @@ public class LoggingFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         log.info("[Gateway 요청] {} {}", request.getMethod(), request.getURI());
-        log.info("[요청 헤더] {}", request.getHeaders());
+//        log.info("[요청 헤더] {}", request.getHeaders());
 
         return chain.filter(exchange)
                 .doAfterTerminate(() -> {
