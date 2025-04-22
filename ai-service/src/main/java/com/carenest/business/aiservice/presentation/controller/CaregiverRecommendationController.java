@@ -3,6 +3,7 @@ package com.carenest.business.aiservice.presentation.controller;
 import com.carenest.business.aiservice.application.dto.CaregiverRecommendRequestDto;
 import com.carenest.business.aiservice.application.service.CaregiverRecommendationService;
 import com.carenest.business.common.response.ResponseDto;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,7 +22,7 @@ public class CaregiverRecommendationController {
 
     @PostMapping
     public ResponseDto<List<UUID>> recommendCaregivers(
-            @RequestBody CaregiverRecommendRequestDto requestDto
+           @Valid @RequestBody CaregiverRecommendRequestDto requestDto
     ) {
         List<UUID> caregiverIds = recommendationService.recommendCaregivers(requestDto);
         return ResponseDto.success("간병인 추천이 완료되었습니다.", caregiverIds);

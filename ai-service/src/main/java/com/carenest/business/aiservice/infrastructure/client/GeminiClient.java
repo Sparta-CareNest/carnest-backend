@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class GeminiClient {
@@ -56,7 +58,8 @@ public class GeminiClient {
         try {
             request = new HttpEntity<>(mapper.writeValueAsString(requestBody), headers);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create request JSON", e);
+            log.error("Gemini 조건 요청 JSON 생성 실패", e);
+            throw new AiException(ErrorCode.GEMINI_CLIENT_ERROR);
         }
 
         String requestUrl = URL + "?key=" + apiKey;
@@ -76,7 +79,7 @@ public class GeminiClient {
             JsonNode root = mapper.readTree(responseBody);
             return root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse Gemini response", e);
+            throw new AiException(ErrorCode.GEMINI_SERVER_ERROR);
         }
     }
 
@@ -105,14 +108,17 @@ public class GeminiClient {
             ResponseEntity<String> response = restTemplate.postForEntity(requestUrl, request, String.class);
 
             if (response.getStatusCode().is4xxClientError()) {
+                log.error("Gemini 4xx 오류 발생: {}", response.getBody());
                 throw new AiException(ErrorCode.GEMINI_CLIENT_ERROR);
             } else if (response.getStatusCode().is5xxServerError()) {
+                log.error("Gemini 5xx 서버 오류 발생: {}", response.getBody());
                 throw new AiException(ErrorCode.GEMINI_SERVER_ERROR);
             }
 
             return parseConditions(response.getBody());
         } catch (Exception e) {
-            throw new RuntimeException("Gemini 요청 실패", e);
+            log.error("Gemini 요청 처리 중 예외 발생", e);
+            throw new AiException(ErrorCode.GEMINI_SERVER_ERROR);
         }
     }
 
@@ -136,7 +142,8 @@ public class GeminiClient {
             JsonNode textNode = root.path("candidates").get(0).path("content").path("parts").get(0).path("text");
             return mapper.readValue(textNode.asText(), CaregiverSearchConditionRequestDto.class);
         } catch (Exception e) {
-            throw new RuntimeException("Gemini 응답 파싱 실패", e);
+            log.error("Gemini 조건 파싱 실패", e);
+            throw new AiException(ErrorCode.GEMINI_SERVER_ERROR);
         }
     }
 }
