@@ -52,7 +52,7 @@ public class CaregiverApprovalController {
 		@AuthUser AuthUserInfo authUserInfo
 	){
 		caregiverApprovalService.rejectCaregiverReservation(reservationId,request,authUserInfo.getUserId());
-		return ResponseDto.success("예약을 수락하셨습니다.");
+		return ResponseDto.success("예약을 거절하셨습니다.");
 	}
 
 }
