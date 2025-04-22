@@ -321,14 +321,14 @@ public class NotificationConsumer {
     }
 
     private String extractCareWorkerIdFromMessage(String message) {
-        // 예시 메시지에서 "간병인 ID: " 뒤의 값을 추출하는 로직
-        // 실제 메시지 포맷에 맞게 수정
-        String[] parts = message.split(",");  // 메시지를 쉼표로 구분
+        String[] parts = message.split(",");
         for (String part : parts) {
-            if (part.contains("간병인 ID:")) {
-                return part.split(":")[1].trim();  // "간병인 ID: 12345"에서 "12345"를 추출
+            String[] keyValue = part.trim().split("=");
+            if (keyValue.length == 2 && keyValue[0].trim().equals("careWorkerId")) {
+                return keyValue[1].trim();
             }
         }
-        throw new IllegalArgumentException("간병인 ID를 메시지에서 추출할 수 없습니다.");
+        throw new IllegalArgumentException("careWorkerId를 메시지에서 추출할 수 없습니다.");
     }
+
 }
