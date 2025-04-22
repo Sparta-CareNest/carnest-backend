@@ -14,7 +14,7 @@ public enum ErrorCode {
     REVIEW_SERVICE_ERROR(HttpStatus.BAD_GATEWAY, "AI005", "리뷰 정보를 가져오는 중 오류가 발생했습니다."),
     REVIEW_EMPTY_CONTENT(HttpStatus.BAD_REQUEST, "AI006", "리뷰 내용이 비어있습니다."),
 
-    CAREGIVER_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI004", "간병인 추천 중 오류가 발생했습니다.");
+    CAREGIVER_RECOMMENDATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "AI007", "간병인 추천 중 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;
