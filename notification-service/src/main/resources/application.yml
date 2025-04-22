@@ -43,3 +43,11 @@ logging:
   level:
     org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN
     org.apache.kafka.clients.NetworkClient: WARN
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
