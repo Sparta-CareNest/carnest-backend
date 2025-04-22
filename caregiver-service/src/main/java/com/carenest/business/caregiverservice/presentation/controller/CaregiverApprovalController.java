@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.carenest.business.caregiverservice.application.service.CaregiverApprovalService;
 import com.carenest.business.caregiverservice.infrastructure.client.dto.reservation.ReservationAcceptRequest;
+import com.carenest.business.caregiverservice.infrastructure.client.dto.reservation.ReservationRejectRequest;
 import com.carenest.business.caregiverservice.presentation.dto.response.PendingApprovalResponse;
 import com.carenest.business.common.annotation.AuthUser;
 import com.carenest.business.common.annotation.AuthUserInfo;
@@ -41,6 +42,16 @@ public class CaregiverApprovalController {
 		@AuthUser AuthUserInfo authUserInfo
 	){
 		caregiverApprovalService.acceptCaregiverReservation(reservationId,request,authUserInfo.getUserId());
+		return ResponseDto.success("예약을 수락하셨습니다.");
+	}
+
+	@PatchMapping("/{reservationId}/reject")
+	public ResponseDto<Void> rejectCaregiverReservation(
+		@PathVariable UUID reservationId,
+		@RequestBody ReservationRejectRequest request,
+		@AuthUser AuthUserInfo authUserInfo
+	){
+		caregiverApprovalService.rejectCaregiverReservation(reservationId,request,authUserInfo.getUserId());
 		return ResponseDto.success("예약을 수락하셨습니다.");
 	}
 
