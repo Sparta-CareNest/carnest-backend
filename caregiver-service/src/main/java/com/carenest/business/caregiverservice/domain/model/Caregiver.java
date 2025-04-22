@@ -86,6 +86,12 @@ public class Caregiver extends BaseEntity {
 	@Enumerated(EnumType.STRING)
 	private GenderType gender;
 
+	@Column(nullable = false)
+	@Enumerated(EnumType.STRING)
+	@Builder.Default
+	private CaregiverStatus status = CaregiverStatus.AVAILABLE;
+
+
 	public void clearCategoryServices() {
 		this.caregiverCategoryServices.clear();
 	}
@@ -100,5 +106,9 @@ public class Caregiver extends BaseEntity {
 
 	public void updateRating(double rating) {
 		this.rating = rating;
+	}
+
+	public void updateStatus(CaregiverStatus status) {
+		this.status = status;
 	}
 }

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.carenest.business.caregiverservice.domain.model.Caregiver;
 import com.carenest.business.caregiverservice.domain.model.CaregiverApproval;
+import com.carenest.business.caregiverservice.domain.model.CaregiverStatus;
 import com.carenest.business.caregiverservice.exception.CaregiverException;
 import com.carenest.business.caregiverservice.exception.ErrorCode;
 import com.carenest.business.caregiverservice.infrastructure.client.ReservationClient;
@@ -82,6 +83,7 @@ public class CaregiverApprovalServiceImpl implements CaregiverApprovalService{
 	}
 
 	@Override
+	@Transactional
 	public void acceptCaregiverReservation(UUID reservationId, ReservationAcceptRequest request, UUID userId) {
 		try {
 
@@ -94,6 +96,7 @@ public class CaregiverApprovalServiceImpl implements CaregiverApprovalService{
 				.orElseThrow(() -> new BaseException(CommonErrorCode.FORBIDDEN));
 
 			reservationClient.acceptReservation(caregiverApproval.getReservationId(),request);
+			caregiver.updateStatus(CaregiverStatus.IN_PROGRESS);
 			log.info("예약 수락 요청이 완료되었습니다.");
 
 		} catch (FeignException e){
@@ -103,6 +106,7 @@ public class CaregiverApprovalServiceImpl implements CaregiverApprovalService{
 	}
 
 	@Override
+	@Transactional
 	public void rejectCaregiverReservation(UUID reservationId, ReservationRejectRequest request, UUID userId) {
 		try {
 			// 1. 간병인 정보 조회
