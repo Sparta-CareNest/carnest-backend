@@ -23,6 +23,7 @@ import com.carenest.business.caregiverservice.application.dto.response.Caregiver
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
 import com.carenest.business.caregiverservice.config.AmazonConfig;
 import com.carenest.business.caregiverservice.domain.model.Caregiver;
+import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.carenest.business.caregiverservice.domain.model.category.CategoryLocation;
 import com.carenest.business.caregiverservice.domain.model.category.CategoryService;
 import com.carenest.business.caregiverservice.domain.service.CaregiverDomainService;
@@ -322,6 +323,13 @@ public class CaregiverServiceImpl implements CaregiverService {
 			caregiver.getRating(), caregiver.getExperienceYears(), caregiver.getPricePerHour(),
 			caregiver.getPricePerDay(), caregiver.getApprovalStatus(), caregiver.getGender(), categoryServiceNames,
 			categoryLocationNames);
+	}
+
+	@Override
+	public List<UUID> getCaregiverIdsByFilters(String location, GenderType gender, Integer experienceYears, Double rating) {
+		List<Caregiver> caregivers = caregiverRepository.getCaregiverIdsByFilters(location, gender, experienceYears, rating);
+
+		return caregivers.stream().map(Caregiver::getId).toList();
 	}
 
 }

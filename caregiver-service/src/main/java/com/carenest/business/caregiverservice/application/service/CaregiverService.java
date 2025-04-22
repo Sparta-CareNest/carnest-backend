@@ -13,6 +13,7 @@ import com.carenest.business.caregiverservice.application.dto.response.Caregiver
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverReadResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverSearchResponseServiceDTO;
 import com.carenest.business.caregiverservice.application.dto.response.CaregiverUpdateResponseServiceDTO;
+import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.carenest.business.caregiverservice.presentation.dto.request.CaregiverUpdateRequestDTO;
 
 public interface CaregiverService {
@@ -37,4 +38,6 @@ public interface CaregiverService {
 	BulkCaregiverTop10Response getTop10Caregiver();
 
 	CaregiverReadResponseServiceDTO getCaregiverDetailUser(UUID caregiverId);
+
+	List<UUID> getCaregiverIdsByFilters(String location, GenderType gender, Integer experienceYears, Double rating);
 }

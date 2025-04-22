@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.HttpHeaders;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,11 +36,17 @@ public class UserService {
     private final JwtUtil jwtUtil;
     private final TokenBlacklistService tokenBlacklistService;
 
+    @Value("${admin.signup.secret-key}")
+    private String adminSecretKey;
+
     // 회원가입
     public SignupResponseDTO signup(SignupRequestDTO request) {
-        // ADMIN 권한으로 가입 시도 차단
+
+        // ADMIN 권한으로 가입 시도 시, 시크릿 키가 필요
         if (request.getRole() == UserRole.ADMIN) {
-            throw new BaseException(UserErrorCode.NOT_ALLOWED_ROLE);
+            if (request.getSecretKey() == null || !request.getSecretKey().equals(adminSecretKey)) {
+                throw new BaseException(UserErrorCode.NOT_ALLOWED_ROLE);
+            }
         }
 
         // 이메일 중복 확인

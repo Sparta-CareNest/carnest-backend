@@ -1,9 +1,6 @@
 package com.carenest.business.adminservice.infrastructure.kafka;
 
-import com.carenest.business.adminservice.infrastructure.dto.SettlementCreatedEventDto;
 import com.carenest.business.common.event.admin.SettlementCreatedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
