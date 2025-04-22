@@ -1,4 +1,4 @@
-package com.carenest.business.gatewayservice.infrasturcture.sercurity;
+package com.carenest.business.gatewayservice.infrasturcture.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;

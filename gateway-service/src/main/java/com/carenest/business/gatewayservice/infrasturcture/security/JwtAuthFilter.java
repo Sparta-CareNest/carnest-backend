@@ -1,4 +1,4 @@
-package com.carenest.business.gatewayservice.infrasturcture.sercurity;
+package com.carenest.business.gatewayservice.infrasturcture.security;
 
 import com.carenest.business.gatewayservice.application.service.TokenBlacklistService;
 import com.fasterxml.jackson.databind.ObjectMapper;
