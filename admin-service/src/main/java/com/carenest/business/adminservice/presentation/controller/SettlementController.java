@@ -8,6 +8,7 @@ import com.carenest.business.common.annotation.AuthUser;
 import com.carenest.business.common.annotation.AuthUserInfo;
 import com.carenest.business.common.model.UserRole;
 import com.carenest.business.common.response.ResponseDto;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -31,6 +32,7 @@ public class SettlementController {
     }
 
     // 정산 생성
+    @Operation(summary = "정산 생성", description = "관리자가 수동 정산 생성하는 API입니다")
     @PostMapping
     public ResponseDto<SettlementResponseDto> createSettlement(
             @Valid @RequestBody SettlementRequestDto requestDto,
@@ -47,6 +49,7 @@ public class SettlementController {
     }
 
     // 특정 간병인의 정산 내역 조회
+    @Operation(summary = "정산 내역 조회", description = "특정 간병인의 정산 내역을 조회하는 API입니다")
     @GetMapping("/{careWorkerId}")
     public ResponseDto<List<SettlementResponseDto>> getSettlementsByCareWorkerId(
             @PathVariable UUID careWorkerId,
@@ -57,6 +60,7 @@ public class SettlementController {
     }
 
     // 결제 내역 기반 정산 생성
+    @Operation(summary = "결제 내역 기반 정산 생성", description = "결제 내역 기반으로 관리자가 정산을 생성하는 API입니다")
     @PostMapping("/create-from-payment")
     public ResponseDto<SettlementResponseDto> createSettlementFromPayment(
             @AuthUser AuthUserInfo authUserInfo,
