@@ -1,13 +1,14 @@
 server:
-  port: 9040
+  port: 9080
 
 spring:
   application:
-    name: payment-service
+    name: chat-service
   profiles:
     active: local
   config:
     import: optional:configserver:http://localhost:8888
+
 
 springdoc:
   api-docs:
@@ -16,3 +17,4 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
+

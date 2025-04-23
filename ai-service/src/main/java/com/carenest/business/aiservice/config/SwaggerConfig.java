@@ -1,4 +1,4 @@
-package com.carenest.business.notificationservice.infrastructure.config;
+package com.carenest.business.aiservice.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -20,8 +20,8 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
             .info(new Info()
-                .title("CareNest 알림 서비스 API")
-                .description("CareNest 플랫폼의 알림 도메인 API 문서입니다.")
+                .title("CareNest AI 서비스 API")
+                .description("CareNest 플랫폼의 AI 도메인 API 문서입니다.")
                 .version("v1.0.0")
                 .contact(new Contact()
                     .name("CareNest Backend Team")
@@ -32,7 +32,7 @@ public class SwaggerConfig {
                     .url("http://www.apache.org/licenses/LICENSE-2.0.html")))
             .servers(List.of(
                 new Server().url("http://localhost:8000").description("로컬 개발 서버"),
-                new Server().url("http://localhost:9070").description("알림 서비스")
+                new Server().url("http://localhost:9090").description("AI 서비스")
             ))
             .components(new Components()
                 .addSecuritySchemes("bearerAuth",

@@ -36,10 +36,16 @@ public class JwtAuthFilter implements GatewayFilter {
 
         // JWT 없이 통과시킬 경로 예외 처리
         if (path.equals("/api/v1/users/signup") || path.equals("/api/v1/users/login") ||
-                path.equals("/swagger-ui") || path.equals("/swagger-ui.html") ||
-                path.equals("/notification-service/v3/api-docs") || path.equals("/webjars/swagger-ui")) {
+            path.equals("/swagger-ui") || path.equals("/swagger-ui.html") ||
+            path.equals("/notification-service/v3/api-docs") || path.startsWith("/caregiver-service/v3/api-docs")
+            || path.startsWith("/user-service/v3/api-docs") || path.startsWith("/review-service/v3/api-docs")
+            || path.startsWith("/reservation-service/v3/api-docs") || path.startsWith("/payment-service/v3/api-docs")
+            || path.startsWith("/chat-service/v3/api-docs") || path.startsWith("/ai-service/v3/api-docs")
+            || path.startsWith("/admin-service/v3/api-docs")
+            || path.equals("/webjars/swagger-ui")) {
             return chain.filter(exchange);
         }
+
 
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
