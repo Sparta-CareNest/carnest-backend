@@ -29,6 +29,20 @@ spring:
           filters:
             - RemoveRequestHeader=Cookie
             - RewritePath=/notification-service/api/v1/notifications/(?<segment>.*), /api/v1/notifications/${segment}
+
+        - id: caregiver-swagger
+          uri: lb://caregiver-service
+          predicates:
+            - Path=/caregiver-service/v3/api-docs
+          filters:
+            - RewritePath=/caregiver-service/v3/api-docs, /v3/api-docs
+        - id: caregiver-docs
+          uri: lb://caregiver-service
+          predicates:
+            - Path=/caregiver-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/caregiver-service/api/v1/caregiver/(?<segment>.*), /api/v1/caregiver/${segment}
       loadbalancer:
         enable: true
 
@@ -44,3 +58,5 @@ springdoc:
     urls:
       - name: Notification Service
         url: /notification-service/v3/api-docs
+      - name: Caregiver Service
+        url: /caregiver-service/v3/api-docs
