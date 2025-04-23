@@ -8,6 +8,8 @@ import com.carenest.business.notificationservice.application.dto.response.Notifi
 import com.carenest.business.notificationservice.application.service.NotificationService;
 import com.carenest.business.notificationservice.domain.model.NotificationType;
 import com.carenest.business.notificationservice.infrastructure.util.AuthValidationUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -18,11 +20,13 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/notifications")
+@Tag(name = "Notification Service", description = "알림 서비스 API")
 public class NotificationController {
 
     private final NotificationService notificationService;
 
     // 1. 결제 성공 알림
+    @Operation(summary = "결제 성공 알림", description = "결제 성공시 알림입니다")
     @PostMapping("/payment-success")
     public ResponseDto<NotificationResponseDto> sendPaymentSuccess(
             @RequestBody NotificationCreateRequestDto requestDto) {

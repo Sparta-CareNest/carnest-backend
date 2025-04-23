@@ -16,3 +16,31 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/api/v1/notifications/**
+        - id: notification-swagger
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/v3/api-docs
+          filters:
+            - RewritePath=/notification-service/v3/api-docs, /v3/api-docs
+        - id: notification-docs
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/notification-service/api/v1/notifications/(?<segment>.*), /api/v1/notifications/${segment}
+      loadbalancer:
+        enable: true
+
+springdoc:
+  enable-native-support: true
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    use-root-path: true
+    urls:
+      - name: Notification Service
+        url: /notification-service/v3/api-docs

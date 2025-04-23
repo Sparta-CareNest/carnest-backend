@@ -75,3 +75,15 @@ project(':review-service') {
         implementation project(':common')
     }
 }
+
+project(':admin-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
+project(':chat-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
