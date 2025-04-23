@@ -16,7 +16,12 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/api/v1/notifications/**
-
+        - id: notification-swagger
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/v3/api-docs
+          filters:
+            - RewritePath=/notification-service/v3/api-docs, /v3/api-docs
         - id: notification-docs
           uri: lb://notification-service
           predicates:

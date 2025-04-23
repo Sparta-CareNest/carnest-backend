@@ -38,6 +38,7 @@ public class ReservationInternalController {
         return ResponseDto.success("예약 정보 조회 성공", reservation);
     }
 
+    @PostMapping("/reservations/{reservationId}/accept")
     @Operation(
             summary = "예약 수락 (내부용)",
             description = "내부 서비스 간 통신용 예약 수락 API입니다.",
@@ -60,6 +61,7 @@ public class ReservationInternalController {
         return ResponseDto.success("예약이 성공적으로 수락되었습니다.", response);
     }
 
+    @PostMapping("/reservations/{reservationId}/reject")
     @Operation(
             summary = "예약 거절 (내부용)",
             description = "내부 서비스 간 통신용 예약 거절 API입니다.",
