@@ -14,6 +14,9 @@ import com.carenest.business.paymentservice.application.service.PaymentService;
 import com.carenest.business.paymentservice.exception.UnauthorizedPaymentAccessException;
 import com.carenest.business.common.model.UserRole;
 import com.carenest.business.paymentservice.infrastructure.config.TossPaymentsConfig;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,15 +32,17 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+@Tag(name = "Payment Service", description = "결제 서비스 API")
 public class PaymentController {
 
     private final PaymentService paymentService;
     private final TossPaymentsConfig tossConfig;
 
     // 결제 생성
+    @Operation(summary = "결제 생성", description = "신규 결제를 생성합니다.")
     @PostMapping("/payments")
     public ResponseDto<PaymentResponse> createPayment(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestBody PaymentCreateRequest request) {
 
         // 토큰에서 추출한 사용자 ID 사용
@@ -46,9 +51,10 @@ public class PaymentController {
     }
 
     // 결제 상세 조회 API
+    @Operation(summary = "결제 상세 조회", description = "결제 ID로 결제 정보를 상세 조회합니다.")
     @GetMapping("/payments/{paymentId}")
     public ResponseDto<PaymentResponse> getPayment(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID paymentId) {
 
         PaymentResponse payment = paymentService.getPayment(paymentId);
@@ -64,9 +70,10 @@ public class PaymentController {
     }
 
     // 예약 ID로 결제 조회
+    @Operation(summary = "예약 ID로 결제 조회", description = "예약 ID로 관련 결제 정보를 조회합니다.")
     @GetMapping("/reservations/{reservationId}/payment")
     public ResponseDto<PaymentResponse> getPaymentByReservation(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID reservationId) {
 
         PaymentResponse payment = paymentService.getPaymentByReservationId(reservationId);
@@ -82,9 +89,10 @@ public class PaymentController {
     }
 
     // 관리자용 전체 결제 내역 조회
+    @Operation(summary = "전체 결제 내역 조회(관리자용)", description = "관리자가 전체 결제 내역을 조회합니다.")
     @GetMapping("/admin/payments")
     public ResponseDto<Page<PaymentListResponse>> getPaymentsAdmin(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -99,9 +107,10 @@ public class PaymentController {
     }
 
     // 내 결제 내역 조회
+    @Operation(summary = "내 결제 내역 조회", description = "로그인한 사용자의 결제 내역을 조회합니다.")
     @GetMapping("/my/payments")
     public ResponseDto<Page<PaymentListResponse>> getMyPayments(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -114,9 +123,10 @@ public class PaymentController {
     }
 
     // 결제 완료 처리
+    @Operation(summary = "결제 완료 처리", description = "결제를 완료 상태로 처리합니다.")
     @PatchMapping("/payments/{paymentId}/complete")
     public ResponseDto<PaymentResponse> completePayment(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID paymentId,
             @RequestBody PaymentCompleteRequest request) {
 
@@ -133,9 +143,10 @@ public class PaymentController {
     }
 
     // 결제 취소
+    @Operation(summary = "결제 취소", description = "결제를 취소합니다.")
     @PatchMapping("/payments/{paymentId}/cancel")
     public ResponseDto<PaymentResponse> cancelPayment(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID paymentId,
             @RequestBody RefundRequest request) {
 
@@ -152,9 +163,10 @@ public class PaymentController {
     }
 
     // 결제 환불
+    @Operation(summary = "결제 환불", description = "결제를 환불 처리합니다.")
     @PatchMapping("/payments/{paymentId}/refund")
     public ResponseDto<PaymentResponse> refundPayment(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID paymentId,
             @RequestBody RefundRequest request) {
 
@@ -171,9 +183,10 @@ public class PaymentController {
     }
 
     // 결제 이력 조회
+    @Operation(summary = "결제 이력 조회", description = "결제 ID에 대한 이력을 조회합니다.")
     @GetMapping("/payments/{paymentId}/history")
     public ResponseDto<Page<PaymentHistoryResponse>> getPaymentHistory(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID paymentId,
             @PageableDefault(size = 10) Pageable pageable) {
 
@@ -191,9 +204,10 @@ public class PaymentController {
     }
 
     // 관리자용 전체 결제 이력 조회
+    @Operation(summary = "전체 결제 이력 조회(관리자용)", description = "관리자가 전체 결제 이력을 조회합니다.")
     @GetMapping("/admin/payments/history")
     public ResponseDto<Page<PaymentHistoryDetailResponse>> getAllPaymentHistory(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -208,9 +222,10 @@ public class PaymentController {
     }
 
     // 내 결제 이력 조회
+    @Operation(summary = "내 결제 이력 조회", description = "로그인한 사용자의 결제 이력을 조회합니다.")
     @GetMapping("/my/payments/history")
     public ResponseDto<Page<PaymentHistoryDetailResponse>> getMyPaymentHistory(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime startDate,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyyMMdd") LocalDateTime endDate,
             @PageableDefault(size = 10) Pageable pageable) {
@@ -223,9 +238,10 @@ public class PaymentController {
     }
 
     // 토스페이먼츠 결제 준비
+    @Operation(summary = "토스페이먼츠 결제 준비", description = "토스페이먼츠를 통한 결제 준비 정보를 제공합니다.")
     @PostMapping("/payments/prepare-toss")
     public ResponseDto<Map<String, Object>> prepareTossPayment(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestBody PaymentCreateRequest request) {
 
         PaymentResponse response = paymentService.createPayment(request, authUserInfo.getUserId());
@@ -250,9 +266,10 @@ public class PaymentController {
     }
 
     // 토스페이먼츠 결제 정보 제공 (통합 엔드포인트)
+    @Operation(summary = "토스페이먼츠 클라이언트 정보", description = "토스페이먼츠 클라이언트 설정 정보를 제공합니다.")
     @GetMapping("/payments/toss/client-info")
     public ResponseDto<Map<String, Object>> getTossClientInfo(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @RequestParam(required = false) UUID reservationId) {
 
         Map<String, Object> response = new HashMap<>();
@@ -288,6 +305,7 @@ public class PaymentController {
 
     // 기존 엔드포인트 유지 (deprecated 표시)
     @Deprecated
+    @Operation(summary = "토스페이먼츠 클라이언트 키 조회 (Deprecated)", description = "토스페이먼츠 클라이언트 키를 조회합니다. 대신 /payments/toss/client-info를 사용하세요.")
     @GetMapping("/payments/toss/client-key")
     public ResponseDto<Map<String, String>> getTossClientKey() {
         return ResponseDto.success("토스페이먼츠 클라이언트 키", Map.of(
@@ -297,9 +315,10 @@ public class PaymentController {
 
     // 기존 엔드포인트 유지 (deprecated 표시)
     @Deprecated
+    @Operation(summary = "토스페이먼츠 결제 정보 조회 (Deprecated)", description = "토스페이먼츠 결제에 필요한 정보를 조회합니다. 대신 /payments/toss/client-info를 사용하세요.")
     @GetMapping("/payments/{paymentId}/pay-with-toss")
     public ResponseDto<Map<String, Object>> getPayWithTossInfo(
-            @AuthUser AuthUserInfo authUserInfo,
+            @Parameter(hidden = true) @AuthUser AuthUserInfo authUserInfo,
             @PathVariable UUID paymentId) {
 
         PaymentResponse payment = paymentService.getPayment(paymentId);

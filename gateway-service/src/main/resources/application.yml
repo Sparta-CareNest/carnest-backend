@@ -25,6 +25,22 @@ spring:
             - RemoveRequestHeader=Cookie
             - RewritePath=/notification-service/api/v1/notifications/(?<segment>.*), /api/v1/notifications/${segment}
 
+        - id: payment-docs
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/payment-service/api/v1/payments/(?<segment>.*), /api/v1/payments/${segment}
+
+        - id: reservation-docs
+          uri: lb://reservation-service
+          predicates:
+            - Path=/reservation-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/reservation-service/api/v1/reservations/(?<segment>.*), /api/v1/reservations/${segment}
+
       loadbalancer:
         enable: true
 
@@ -40,3 +56,7 @@ springdoc:
     urls:
       - name: Notification Service
         url: /notification-service/v3/api-docs
+      - name: Payment Service
+        url: /payment-service/v3/api-docs
+      - name: Reservation Service
+        url: /reservation-service/v3/api-docs
