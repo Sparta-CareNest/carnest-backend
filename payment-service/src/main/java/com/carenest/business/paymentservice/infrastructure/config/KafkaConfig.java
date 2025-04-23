@@ -12,6 +12,8 @@ import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.converter.RecordMessageConverter;
+import org.springframework.kafka.support.converter.StringJsonMessageConverter;
 import org.springframework.kafka.support.serializer.JsonSerializer;
 
 import java.util.HashMap;
@@ -85,5 +87,50 @@ public class KafkaConfig {
                 .partitions(3)
                 .replicas(1)
                 .build();
+    }
+
+    @Bean
+    public NewTopic paymentCompletedDLQTopic() {
+        return TopicBuilder.name("payment-completed.dlq")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic paymentCancelledDLQTopic() {
+        return TopicBuilder.name("payment-cancelled.dlq")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic reservationCancelledDLQTopic() {
+        return TopicBuilder.name("reservation-cancelled.dlq")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic caregiverAcceptDLQTopic() {
+        return TopicBuilder.name("caregiver-accept.dlq")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic notificationEventDLQTopic() {
+        return TopicBuilder.name("notification-event.dlq")
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public RecordMessageConverter converter() {
+        return new StringJsonMessageConverter();
     }
 }
