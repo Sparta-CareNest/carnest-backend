@@ -28,18 +28,18 @@ spring:
         - id: payment-docs
           uri: lb://payment-service
           predicates:
-            - Path=/payment-service/**
+            - Path=/payment-service/v3/api-docs
           filters:
             - RemoveRequestHeader=Cookie
-            - RewritePath=/payment-service/api/v1/payments/(?<segment>.*), /api/v1/payments/${segment}
+            - RewritePath=/payment-service/v3/api-docs, /v3/api-docs
 
         - id: reservation-docs
           uri: lb://reservation-service
           predicates:
-            - Path=/reservation-service/**
+            - Path=/reservation-service/v3/api-docs
           filters:
             - RemoveRequestHeader=Cookie
-            - RewritePath=/reservation-service/api/v1/reservations/(?<segment>.*), /api/v1/reservations/${segment}
+            - RewritePath=/reservation-service/v3/api-docs, /v3/api-docs
 
       loadbalancer:
         enable: true
