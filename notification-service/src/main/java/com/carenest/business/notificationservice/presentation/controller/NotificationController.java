@@ -34,6 +34,7 @@ public class NotificationController {
     }
 
     // 2. 예약 생성 알림
+    @Operation(summary = "예약 생성 알림", description = "예약 생성시 알림입니다")
     @PostMapping("/reservation-created")
     public ResponseDto<NotificationResponseDto> sendReservationCreated(
             @RequestBody NotificationCreateRequestDto requestDto) {
@@ -41,6 +42,7 @@ public class NotificationController {
     }
 
     // 3. 정산 완료 알림
+    @Operation(summary = "정산 완료 알림", description = "정산 완료시 알림입니다")
     @PostMapping("/settlement-completed")
     public ResponseDto<NotificationResponseDto> sendSettlementCompleted(
             @RequestBody NotificationCreateRequestDto requestDto) {
@@ -57,6 +59,7 @@ public class NotificationController {
     }
 
     // 4. 알림 목록 조회, 읽음/안읽음 필터 -> 로그인한 토큰 사용자로 바꾸기
+    @Operation(summary = "알림 목록 조회", description = "알림 목록 조회 - 읽음/안읽음 필터 기능")
     @GetMapping
     public ResponseDto<List<NotificationResponseDto>> getNotifications(
             @RequestParam(value = "isRead", required = false) Boolean isRead,
@@ -71,6 +74,7 @@ public class NotificationController {
     }
 
     // 5. 알림 읽음 처리 기능
+    @Operation(summary = "알림 읽음 처리 기능", description = "알림 읽음 처리 기능입니다")
     @PatchMapping("/{notificationId}/read")
     public ResponseDto<Void> markAsRead(@PathVariable("notificationId") UUID notificationId) {
         log.info("[알림 읽음 처리 요청] notificationId={}", notificationId);

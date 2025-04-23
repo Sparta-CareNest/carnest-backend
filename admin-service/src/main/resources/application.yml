@@ -30,3 +30,11 @@ feign:
     config:
       payment-service:
         url: http://payment-service:9040
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
