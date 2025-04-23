@@ -1,4 +1,4 @@
-package com.carenest.business.caregiverservice.config;
+package com.carenest.business.userservice.infrastructure.configuration;
 
 import java.util.List;
 
@@ -10,9 +10,9 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.servers.Server;
-import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 
 @Configuration
 public class SwaggerConfig {
@@ -21,8 +21,8 @@ public class SwaggerConfig {
 	public OpenAPI openAPI() {
 		return new OpenAPI()
 			.info(new Info()
-				.title("CareNest 간병인 서비스 API")
-				.description("CareNest 플랫폼의 간병인 도메인 API 문서입니다.")
+				.title("CareNest 유저 서비스 API")
+				.description("CareNest 플랫폼의 유저 도메인 API 문서입니다.")
 				.version("v1.0.0")
 				.contact(new Contact()
 					.name("CareNest Backend Team")
@@ -33,7 +33,7 @@ public class SwaggerConfig {
 					.url("http://www.apache.org/licenses/LICENSE-2.0.html")))
 			.servers(List.of(
 				new Server().url("http://localhost:8000").description("로컬 개발 서버"),
-				new Server().url("http://localhost:9020").description("간병인 서비스")
+				new Server().url("http://localhost:9010").description("유저 서비스")
 			))
 			.components(new Components()
 				.addSecuritySchemes("bearerAuth",
