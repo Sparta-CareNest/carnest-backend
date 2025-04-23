@@ -1,11 +1,12 @@
 package com.carenest.business.reservationservice.infrastructure.kafka;
 
+import com.carenest.business.common.event.payment.PaymentCancelledEvent;
+import com.carenest.business.common.event.payment.PaymentCompletedEvent;
+import com.carenest.business.common.kafka.KafkaRetryConfig.IdempotentMessageProcessor;
 import com.carenest.business.reservationservice.application.service.ReservationService;
 import com.carenest.business.reservationservice.domain.model.Reservation;
 import com.carenest.business.reservationservice.domain.repository.ReservationRepository;
 import com.carenest.business.reservationservice.infrastructure.service.ExternalServiceClient;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -14,7 +15,6 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,7 +26,7 @@ public class PaymentEventConsumer {
     private final ReservationService reservationService;
     private final ReservationRepository reservationRepository;
     private final ExternalServiceClient externalServiceClient;
-    private final ObjectMapper objectMapper;
+    private final IdempotentMessageProcessor idempotentProcessor;
 
     @Transactional
     @KafkaListener(
@@ -34,46 +34,26 @@ public class PaymentEventConsumer {
             groupId = "reservation-service-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consumePaymentCompletedEvent(ConsumerRecord<String, Map<String, Object>> record, Acknowledgment acknowledgment) {
-        log.info("결제 완료 이벤트 수신: {}", record);
+    public void consumePaymentCompletedEvent(ConsumerRecord<String, PaymentCompletedEvent> record, Acknowledgment acknowledgment) {
+        PaymentCompletedEvent event = record.value();
+        String messageKey = generateMessageKey(record);
+
+        log.info("결제 완료 이벤트 수신: reservationId={}, paymentId={}",
+                event.getReservationId(), event.getPaymentId());
 
         try {
-            Map<String, Object> payload = record.value();
-
-            // 로그에 전체 페이로드 출력
-            log.info("결제 완료 이벤트 페이로드: {}", payload);
-
-            // Map에서 직접 값 추출
-            Object reservationIdObj = payload.get("reservationId");
-            Object paymentIdObj = payload.get("paymentId");
-
-            log.info("추출된 값 - reservationId: {}, paymentId: {}", reservationIdObj, paymentIdObj);
-
-            // UUID로 변환
-            UUID reservationId = null;
-            UUID paymentId = null;
-
-            if (reservationIdObj != null) {
-                reservationId = UUID.fromString(reservationIdObj.toString());
-            }
-
-            if (paymentIdObj != null) {
-                paymentId = UUID.fromString(paymentIdObj.toString());
-            }
-
-            if (reservationId == null) {
-                log.error("결제 완료 이벤트에 예약 ID가 없음");
+            // 멱등성 처리
+            if (!idempotentProcessor.processIfNotDuplicate(messageKey)) {
+                log.info("이미 처리된 결제 완료 이벤트: paymentId={}, 중복 메시지 무시", event.getPaymentId());
                 acknowledgment.acknowledge();
                 return;
             }
 
-            log.info("변환된 UUID - reservationId: {}, paymentId: {}", reservationId, paymentId);
-
             // 예약 정보 조회
-            Optional<Reservation> reservationOpt = reservationRepository.findById(reservationId);
+            Optional<Reservation> reservationOpt = reservationRepository.findById(event.getReservationId());
 
             if (reservationOpt.isEmpty()) {
-                log.error("예약 정보를 찾을 수 없음: reservationId={}", reservationId);
+                log.error("예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
                 acknowledgment.acknowledge();
                 return;
             }
@@ -84,52 +64,28 @@ public class PaymentEventConsumer {
 
             // 이미 결제 정보가 연결된 경우 체크
             if (reservation.getPaymentId() != null &&
-                    reservation.getPaymentId().equals(paymentId)) {
+                    reservation.getPaymentId().equals(event.getPaymentId())) {
                 log.info("이미 결제 정보가 연결되어 있음: reservationId={}, paymentId={}",
                         reservation.getReservationId(), reservation.getPaymentId());
+                idempotentProcessor.markAsProcessed(messageKey);
                 acknowledgment.acknowledge();
                 return;
             }
 
             // 결제 완료 시 예약 상태 업데이트 및 결제 정보 연결
-            reservationService.linkPayment(reservationId, paymentId);
+            reservationService.linkPayment(event.getReservationId(), event.getPaymentId());
             log.info("결제 정보 연결 완료: reservationId={}, paymentId={}",
-                    reservationId, paymentId);
+                    event.getReservationId(), event.getPaymentId());
 
-            // 결제 완료 후 간병인에게 새 예약 알림 전송
-            reservation = reservationRepository.findById(reservationId).get(); // 최신 상태로 다시 조회
-
-            String notificationMsg = String.format(
-                    "새로운 예약이 들어왔습니다. 예약번호: %s, 환자명: %s, 시작일시: %s, 종료일시: %s. 확인 후 수락해주세요.",
-                    reservation.getReservationId(),
-                    reservation.getPatientName(),
-                    reservation.getStartedAt(),
-                    reservation.getEndedAt()
-            );
-
-            externalServiceClient.sendReservationCreatedNotification(
-                    reservation.getCaregiverId(), notificationMsg);
-
-            log.info("간병인에게 새 예약 알림 전송 완료: caregiverId={}", reservation.getCaregiverId());
-
-            // 보호자에게도 결제 완료 알림 발송
-            String guardianMsg = String.format(
-                    "결제가 완료되었습니다. 예약번호: %s, 금액: %s원, 간병인의 예약 수락을 기다리고 있습니다.",
-                    reservation.getReservationId(),
-                    reservation.getTotalAmount()
-            );
-
-            externalServiceClient.sendPaymentCompletedNotification(
-                    reservation.getGuardianId(), guardianMsg);
-
-            log.info("보호자에게 결제 완료 알림 전송 완료: guardianId={}", reservation.getGuardianId());
+            // 멱등성 처리를 위한 메시지 처리 기록
+            idempotentProcessor.markAsProcessed(messageKey);
 
             acknowledgment.acknowledge();
         } catch (Exception e) {
-            log.error("결제 완료 이벤트 처리 중 오류 발생: {}", e.getMessage(), e);
-            // 스택 트레이스 출력
-            log.error("스택 트레이스:", e);
-            acknowledgment.acknowledge();
+            log.error("결제 완료 이벤트 처리 중 오류 발생: reservationId={}, error={}",
+                    event.getReservationId(), e.getMessage(), e);
+            // CommonErrorHandler에서 처리하도록 예외 다시 throw
+            throw e;
         }
     }
 
@@ -139,45 +95,26 @@ public class PaymentEventConsumer {
             groupId = "reservation-service-group",
             containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consumePaymentCancelledEvent(ConsumerRecord<String, Map<String, Object>> record, Acknowledgment acknowledgment) {
-        log.info("결제 취소 이벤트 수신: {}", record);
+    public void consumePaymentCancelledEvent(ConsumerRecord<String, PaymentCancelledEvent> record, Acknowledgment acknowledgment) {
+        PaymentCancelledEvent event = record.value();
+        String messageKey = generateMessageKey(record);
+
+        log.info("결제 취소 이벤트 수신: reservationId={}, paymentId={}",
+                event.getReservationId(), event.getPaymentId());
 
         try {
-            Map<String, Object> payload = record.value();
-
-            // Map에서 직접 값 추출
-            Object reservationIdObj = payload.get("reservationId");
-            Object paymentIdObj = payload.get("paymentId");
-            Object cancelReasonObj = payload.get("cancelReason");
-
-            // UUID로 변환
-            UUID reservationId = null;
-            UUID paymentId = null;
-            String cancelReason = null;
-
-            if (reservationIdObj != null) {
-                reservationId = UUID.fromString(reservationIdObj.toString());
-            }
-
-            if (paymentIdObj != null) {
-                paymentId = UUID.fromString(paymentIdObj.toString());
-            }
-
-            if (cancelReasonObj != null) {
-                cancelReason = cancelReasonObj.toString();
-            }
-
-            if (reservationId == null) {
-                log.error("결제 취소 이벤트에 예약 ID가 없음");
+            // 멱등성 처리
+            if (!idempotentProcessor.processIfNotDuplicate(messageKey)) {
+                log.info("이미 처리된 결제 취소 이벤트: paymentId={}, 중복 메시지 무시", event.getPaymentId());
                 acknowledgment.acknowledge();
                 return;
             }
 
             // 예약 정보 조회
-            Optional<Reservation> optionalReservation = reservationRepository.findById(reservationId);
+            Optional<Reservation> optionalReservation = reservationRepository.findById(event.getReservationId());
 
             if (optionalReservation.isEmpty()) {
-                log.error("예약 정보를 찾을 수 없음: reservationId={}", reservationId);
+                log.error("예약 정보를 찾을 수 없음: reservationId={}", event.getReservationId());
                 acknowledgment.acknowledge();
                 return;
             }
@@ -188,40 +125,99 @@ public class PaymentEventConsumer {
             if (reservation.getStatus() != com.carenest.business.reservationservice.domain.model.ReservationStatus.CANCELLED) {
                 // 결제 취소로 인한 예약 취소 처리
                 reservationService.cancelReservation(
-                        reservationId,
+                        event.getReservationId(),
                         "결제 취소로 인한 자동 예약 취소",
-                        cancelReason != null ?
-                                "결제 취소 이유: " + cancelReason : "결제 취소"
+                        event.getCancelReason() != null ?
+                                "결제 취소 이유: " + event.getCancelReason() : "결제 취소"
                 );
 
-                log.info("결제 취소로 인한 예약 취소 완료: reservationId={}", reservationId);
-
-                // 상태 변경 알림 발송
-                String cancelMsg = String.format(
-                        "결제 취소로 인해 예약이 자동으로 취소되었습니다. 예약번호: %s, 취소 사유: %s",
-                        reservationId,
-                        cancelReason != null ? cancelReason : "결제 취소"
-                );
-
-                // 보호자에게 알림
-                externalServiceClient.sendReservationCreatedNotification(
-                        reservation.getGuardianId(), cancelMsg);
-
-                log.info("보호자에게 예약 취소 알림 전송 완료: guardianId={}", reservation.getGuardianId());
-
-                // 간병인에게 알림
-                externalServiceClient.sendReservationCreatedNotification(
-                        reservation.getCaregiverId(), cancelMsg);
-
-                log.info("간병인에게 예약 취소 알림 전송 완료: caregiverId={}", reservation.getCaregiverId());
+                log.info("결제 취소로 인한 예약 취소 완료: reservationId={}", event.getReservationId());
             } else {
-                log.info("이미 취소된 예약입니다: reservationId={}", reservationId);
+                log.info("이미 취소된 예약입니다: reservationId={}", event.getReservationId());
+            }
+
+            // 멱등성 처리
+            idempotentProcessor.markAsProcessed(messageKey);
+
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("결제 취소 이벤트 처리 중 오류 발생: reservationId={}, error={}",
+                    event.getReservationId(), e.getMessage(), e);
+            // CommonErrorHandler에서 처리하도록 예외 다시 throw
+            throw e;
+        }
+    }
+
+    @KafkaListener(
+            topics = "payment-completed.dlq",
+            groupId = "reservation-service-dlq-group",
+            containerFactory = "deadLetterListenerContainerFactory")
+    public void processDLQPaymentCompletedEvent(ConsumerRecord<String, PaymentCompletedEvent> record, Acknowledgment acknowledgment) {
+        PaymentCompletedEvent event = record.value();
+
+        log.warn("DLQ에서 결제 완료 이벤트 처리: reservationId={}, paymentId={}, 재처리 시도",
+                event.getReservationId(), event.getPaymentId());
+
+        try {
+            // 알림 발송 - 중요 이벤트이므로 관리자에게 알림
+            try {
+                String content = String.format(
+                        "[중요] 결제 완료 이벤트 처리 실패: 예약ID=%s, 결제ID=%s, 금액=%s",
+                        event.getReservationId(), event.getPaymentId(), event.getAmount());
+
+                // 관리자 알림 발송
+                externalServiceClient.sendReservationCreatedNotification(
+                        UUID.fromString("00000000-0000-0000-0000-000000000000"), // 관리자 ID
+                        content
+                );
+            } catch (Exception e) {
+                log.error("DLQ 알림 실패: {}", e.getMessage());
             }
 
             acknowledgment.acknowledge();
         } catch (Exception e) {
-            log.error("결제 취소 이벤트 처리 중 오류 발생: {}", e.getMessage(), e);
+            log.error("DLQ 메시지 처리 중 오류: paymentId={}, error={}",
+                    event.getPaymentId(), e.getMessage(), e);
             acknowledgment.acknowledge();
         }
+    }
+
+    @KafkaListener(
+            topics = "payment-cancelled.dlq",
+            groupId = "reservation-service-dlq-group",
+            containerFactory = "deadLetterListenerContainerFactory")
+    public void processDLQPaymentCancelledEvent(ConsumerRecord<String, PaymentCancelledEvent> record, Acknowledgment acknowledgment) {
+        PaymentCancelledEvent event = record.value();
+
+        log.warn("DLQ에서 결제 취소 이벤트 처리: reservationId={}, paymentId={}, 재처리 시도",
+                event.getReservationId(), event.getPaymentId());
+
+        try {
+            // 알림 발송
+            try {
+                String content = String.format(
+                        "[중요] 결제 취소 이벤트 처리 실패: 예약ID=%s, 결제ID=%s, 취소사유=%s",
+                        event.getReservationId(), event.getPaymentId(),
+                        event.getCancelReason() != null ? event.getCancelReason() : "미상");
+
+                // 관리자 알림 발송
+                externalServiceClient.sendReservationCreatedNotification(
+                        UUID.fromString("00000000-0000-0000-0000-000000000000"), // 관리자 ID
+                        content
+                );
+            } catch (Exception e) {
+                log.error("DLQ 알림 실패: {}", e.getMessage());
+            }
+
+            acknowledgment.acknowledge();
+        } catch (Exception e) {
+            log.error("DLQ 메시지 처리 중 오류: paymentId={}, error={}",
+                    event.getPaymentId(), e.getMessage(), e);
+            acknowledgment.acknowledge();
+        }
+    }
+
+    private <T> String generateMessageKey(ConsumerRecord<String, T> record) {
+        return record.topic() + "-" + record.partition() + "-" + record.offset();
     }
 }
