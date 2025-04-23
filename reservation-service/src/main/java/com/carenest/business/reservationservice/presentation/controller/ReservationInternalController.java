@@ -24,7 +24,7 @@ public class ReservationInternalController {
         return ResponseDto.success("예약 정보 조회 성공", reservation);
     }
 
-    @PatchMapping("/reservations/{reservationId}/accept")
+    @PostMapping("/reservations/{reservationId}/accept")
     public ResponseDto<ReservationResponse> acceptReservation(
             @PathVariable UUID reservationId,
             @RequestBody @Valid ReservationAcceptRequest request) {
@@ -37,7 +37,7 @@ public class ReservationInternalController {
         return ResponseDto.success("예약이 성공적으로 수락되었습니다.", response);
     }
 
-    @PatchMapping("/reservations/{reservationId}/reject")
+    @PostMapping("/reservations/{reservationId}/reject")
     public ResponseDto<ReservationResponse> rejectReservation(
             @PathVariable UUID reservationId,
             @RequestBody @Valid ReservationRejectRequest request) {

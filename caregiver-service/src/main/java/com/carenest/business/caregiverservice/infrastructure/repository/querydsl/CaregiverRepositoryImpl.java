@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import com.carenest.business.caregiverservice.domain.model.CaregiverStatus;
 import com.carenest.business.caregiverservice.domain.model.GenderType;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
@@ -40,7 +41,8 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.where(
 				location != null ? caregiverCategoryLocation.categoryLocation.name.eq(location) : null,
 				service != null ? caregiverCategoryService.categoryService.name.eq(service) : null,
-				caregiver.approvalStatus.eq(true)
+				caregiver.approvalStatus.eq(true),
+				caregiver.status.eq(CaregiverStatus.AVAILABLE)
 			)
 			.offset(pageable.getOffset())
 			.limit(pageable.getPageSize());
@@ -61,7 +63,8 @@ public class CaregiverRepositoryImpl implements CaregiverCustomRepository {
 			.where(
 				location != null ? caregiverCategoryLocation.categoryLocation.name.eq(location) : null,
 				service != null ? caregiverCategoryService.categoryService.name.eq(service) : null,
-				caregiver.approvalStatus.eq(true)
+				caregiver.approvalStatus.eq(true),
+				caregiver.status.eq(CaregiverStatus.AVAILABLE)
 			);
 
 		return new PageImpl<>(caregivers, pageable, caregiverCountQuery.fetchOne());
