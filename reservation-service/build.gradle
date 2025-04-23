@@ -44,7 +44,6 @@ dependencies {
     annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
 
     // Web
-    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // Kafka
