@@ -1,12 +1,15 @@
 package com.carenest.business.paymentservice.presentation.controller;
 
-import com.carenest.business.common.response.ResponseDto;
 import com.carenest.business.paymentservice.application.dto.request.PaymentCompleteRequest;
 import com.carenest.business.paymentservice.application.service.PaymentService;
 import com.carenest.business.paymentservice.domain.model.Payment;
-import com.carenest.business.paymentservice.infrastructure.repository.PaymentRepository;
 import com.carenest.business.paymentservice.exception.PaymentErrorCode;
 import com.carenest.business.paymentservice.exception.PaymentException;
+import com.carenest.business.paymentservice.infrastructure.repository.PaymentRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,18 +25,29 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/payments/toss")
 @RequiredArgsConstructor
+@Tag(name = "Toss Payments", description = "토스페이먼츠 연동 API")
 public class TossPaymentController {
 
     private final PaymentService paymentService;
     private final PaymentRepository paymentRepository;
 
     // 결제 성공 후 토스페이먼츠에서 호출하는 엔드포인트
+    @Operation(
+            summary = "토스페이먼츠 결제 성공 콜백",
+            description = "토스페이먼츠 결제 성공 시 호출되는 콜백 엔드포인트입니다.",
+            responses = {
+                    @ApiResponse(responseCode = "302", description = "성공 페이지로 리다이렉트"),
+                    @ApiResponse(responseCode = "400", description = "잘못된 요청"),
+                    @ApiResponse(responseCode = "404", description = "결제 정보를 찾을 수 없음"),
+                    @ApiResponse(responseCode = "500", description = "서버 오류")
+            }
+    )
     @GetMapping("/success")
     public RedirectView paymentSuccess(
-            @RequestParam("paymentKey") String paymentKey,
-            @RequestParam("orderId") String orderId,
-            @RequestParam("amount") BigDecimal amount,
-            @RequestParam(value = "paymentId", required = false) String paymentIdStr) {
+            @Parameter(description = "토스페이먼츠 결제 키") @RequestParam("paymentKey") String paymentKey,
+            @Parameter(description = "주문 ID") @RequestParam("orderId") String orderId,
+            @Parameter(description = "결제 금액") @RequestParam("amount") BigDecimal amount,
+            @Parameter(description = "결제 ID (선택사항)") @RequestParam(value = "paymentId", required = false) String paymentIdStr) {
 
         log.info("토스페이먼츠 결제 성공 콜백: paymentKey={}, orderId={}, amount={}, paymentId={}",
                 paymentKey, orderId, amount, paymentIdStr);
@@ -95,11 +109,18 @@ public class TossPaymentController {
     }
 
     // 결제 실패 시 토스페이먼츠에서 호출하는 엔드포인트
+    @Operation(
+            summary = "토스페이먼츠 결제 실패 콜백",
+            description = "토스페이먼츠 결제 실패 시 호출되는 콜백 엔드포인트입니다.",
+            responses = {
+                    @ApiResponse(responseCode = "302", description = "실패 페이지로 리다이렉트")
+            }
+    )
     @GetMapping("/fail")
     public RedirectView paymentFail(
-            @RequestParam("code") String errorCode,
-            @RequestParam("message") String errorMessage,
-            @RequestParam("orderId") String orderId) {
+            @Parameter(description = "오류 코드") @RequestParam("code") String errorCode,
+            @Parameter(description = "오류 메시지") @RequestParam("message") String errorMessage,
+            @Parameter(description = "주문 ID") @RequestParam("orderId") String orderId) {
 
         log.error("토스페이먼츠 결제 실패 콜백: orderId={}, errorCode={}, errorMessage={}",
                 orderId, errorCode, errorMessage);
@@ -109,9 +130,17 @@ public class TossPaymentController {
     }
 
     // 토스페이먼츠 웹훅 처리 엔드포인트
+    @Operation(
+            summary = "토스페이먼츠 웹훅 처리",
+            description = "토스페이먼츠에서 발송하는 웹훅을 처리합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "웹훅 처리 성공")
+            }
+    )
     @PostMapping("/webhook")
     @ResponseStatus(HttpStatus.OK)
-    public void webhookHandler(@RequestBody Map<String, Object> webhookPayload) {
+    public void webhookHandler(
+            @Parameter(description = "웹훅 페이로드", required = true) @RequestBody Map<String, Object> webhookPayload) {
         log.info("토스페이먼츠 웹훅 수신: {}", webhookPayload);
 
         // 웹훅 이벤트 타입 확인
