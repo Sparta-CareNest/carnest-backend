@@ -164,3 +164,13 @@ springdoc:
         url: /reservation-service/v3/api-docs
       - name: Caregiver Service
         url: /caregiver-service/v3/api-docs
+      - name: User Service
+        url: /user-service/v3/api-docs
+      - name: Review Service
+        url: /review-service/v3/api-docs
+      - name: Chat Service
+        url: /chat-service/v3/api-docs
+      - name: AI Service
+        url: /ai-service/v3/api-docs
+      - name: Admin Service
+        url: /admin-service/v3/api-docs
