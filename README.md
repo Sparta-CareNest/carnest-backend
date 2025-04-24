@@ -126,18 +126,25 @@ CareNest는 이러한 문제를 해결하기 위해, 온라인 기반의 간병�
 <br>
 
 ## 기술적 의사결정
-🥨 [@AuthUser Custom Header 생성 및 전달 로직 설계](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/AuthUser-Header-전달-설계)
+🧠 [@AuthUser Custom Header 생성 및 전달 로직 설계](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/AuthUser-Header-전달-설계)
 
-🥨 [MSA에서 Swagger 통합 문서화에 대한 기술적 의사결정](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/Swagger-통합-문서화-설계)
+🧠 [MSA에서 Swagger 통합 문서화에 대한 기술적 의사결정](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/Swagger-통합-문서화-설계)
 
-🥨 [Toss Payments 도입을 통한 결제 서비스 구현](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/Toss-Payments-결제-흐름)
+🧠 [Toss Payments 도입을 통한 결제 서비스 구현](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/Toss-Payments-결제-흐름)
 
-🥨 [카프카(kafka) vs RabbitMQ 비교 및 선정 이유](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/Kafka-vs-RabbitMQ)
+🧠 [카프카(kafka) vs RabbitMQ 비교 및 선정 이유](https://github.com/Sparta-CareNest/carnest-backend/wiki/기술적-의사결정/Kafka-vs-RabbitMQ)
 
 <br>
 
 ## 트러블슈팅
-### BackEnd
+
+🐞[ JPA 페이징에서 발생한 카디널리티 곱(Cartesian Product) 문제](https://github.com/Sparta-CareNest/carnest-backend/wiki/JPA-카디널리티-곱-문제)
+
+🐞[ 간병인 조회 API 성능 개선](https://github.com/Sparta-CareNest/carnest-backend/wiki/간병인-조회-API-성능-개선)
+
+🐞[ 인기 간병인 조회 API 성능 개선](https://github.com/Sparta-CareNest/carnest-backend/wiki/인기-간병인-조회-API-성능-개선)
+
+🐞[ Kafka 메시지가 수신되지 않는 문제](https://github.com/Sparta-CareNest/carnest-backend/wiki/Kafka-메시지-수신-문제)
 
 <br>
 
