@@ -1,0 +1,53 @@
+server:
+  port: 9070
+
+spring:
+  application:
+    name: notification-service
+  profiles:
+    active: local
+  config:
+    import: optional:configserver:http://localhost:8888
+  messages:
+    encoding: UTF-8
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    listener:
+      ack-mode: MANUAL_IMMEDIATE
+
+user-service:
+  url: http://localhost:9010  # 유저 서비스 주소
+
+reservation-service:
+  url: http://localhost:9030  # 예약 서비스 주소
+
+payment-service:
+  url: http://localhost:9040  # 결제 서비스 주소
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+
+logging:
+  level:
+    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN
+    org.apache.kafka.clients.NetworkClient: WARN
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

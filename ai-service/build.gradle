@@ -18,11 +18,30 @@ repositories {
 }
 
 dependencies {
+
+	//swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
+
+	// Spring Cloud
+	implementation 'org.springframework.cloud:spring-cloud-config-client'
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	// web
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	//Gemini 응답 파싱용
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
 	// Lombok은 전파가 안됌
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
+	// DB
+	runtimeOnly 'org.postgresql:postgresql'
+
 	implementation project(':common')
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

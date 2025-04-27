@@ -18,6 +18,23 @@ repositories {
 }
 
 dependencies {
+	// Swagger
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+	// WebSocket
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	implementation 'org.postgresql:postgresql'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// Eureka Client (서비스 등록)
+	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	implementation 'org.springframework.cloud:spring-cloud-config-client'
+
 	// Lombok은 전파가 안됌
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -25,8 +42,26 @@ dependencies {
 	implementation project(':common')
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// 테스트
+	testImplementation 'org.junit.jupiter:junit-jupiter-api'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+	testImplementation 'org.mockito:mockito-core'
+	testImplementation 'org.mockito:mockito-junit-jupiter'
+
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+ext {
+	set('springCloudVersion', "2024.0.0")
+}
+

@@ -3,8 +3,174 @@ server:
 
 spring:
   application:
-    name: gateway-servivce
+    name: gateway-service
   profiles:
     active: local
   config:
     import: optional:configserver:http://localhost:8888
+
+  cloud:
+    gateway:
+      routes:
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: notification-swagger
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/v3/api-docs
+          filters:
+            - RewritePath=/notification-service/v3/api-docs, /v3/api-docs
+        - id: notification-docs
+          uri: lb://notification-service
+          predicates:
+            - Path=/notification-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/notification-service/api/v1/notifications/(?<segment>.*), /api/v1/notifications/${segment}
+
+        - id: payment-swagger
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/v3/api-docs
+          filters:
+            - RewritePath=/payment-service/v3/api-docs, /v3/api-docs
+        - id: payment-docs
+          uri: lb://payment-service
+          predicates:
+            - Path=/payment-service/v3/api-docs
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/payment-service/v3/api-docs, /v3/api-docs
+
+        - id: reservation-swagger
+          uri: lb://reservation-service
+          predicates:
+            - Path=/reservation-service/v3/api-docs
+          filters:
+            - RewritePath=/reservation-service/v3/api-docs, /v3/api-docs
+        - id: reservation-docs
+          uri: lb://reservation-service
+          predicates:
+            - Path=/reservation-service/v3/api-docs
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/reservation-service/v3/api-docs, /v3/api-docs
+
+        - id: caregiver-swagger
+          uri: lb://caregiver-service
+          predicates:
+            - Path=/caregiver-service/v3/api-docs
+          filters:
+            - RewritePath=/caregiver-service/v3/api-docs, /v3/api-docs
+        - id: caregiver-docs
+          uri: lb://caregiver-service
+          predicates:
+            - Path=/caregiver-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/caregiver-service/api/v1/caregiver/(?<segment>.*), /api/v1/caregiver/${segment}
+
+        - id: review-swagger
+          uri: lb://review-service
+          predicates:
+            - Path=/review-service/v3/api-docs
+          filters:
+            - RewritePath=/review-service/v3/api-docs, /v3/api-docs
+        - id: review-docs
+          uri: lb://review-service
+          predicates:
+            - Path=/review-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/review-service/api/v1/review/(?<segment>.*), /api/v1/review/${segment}
+
+        - id: ai-swagger
+          uri: lb://ai-service
+          predicates:
+            - Path=/ai-service/v3/api-docs
+          filters:
+            - RewritePath=/ai-service/v3/api-docs, /v3/api-docs
+        - id: ai-docs
+          uri: lb://ai-service
+          predicates:
+            - Path=/ai-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/ai-service/api/v1/ai/(?<segment>.*), /api/v1/ai/${segment}
+
+        - id: user-swagger
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/v3/api-docs
+          filters:
+            - RewritePath=/user-service/v3/api-docs, /v3/api-docs
+        - id: user-docs
+          uri: lb://user-service
+          predicates:
+            - Path=/user-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/user-service/api/v1/user/(?<segment>.*), /api/v1/user/${segment}
+
+        - id: admin-swagger
+          uri: lb://admin-service
+          predicates:
+            - Path=/admin-service/v3/api-docs
+          filters:
+            - RewritePath=/admin-service/v3/api-docs, /v3/api-docs
+        - id: admin-docs
+          uri: lb://admin-service
+          predicates:
+            - Path=/admin-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/admin-service/api/v1/admin/(?<segment>.*), /api/v1/admin/${segment}
+
+
+        - id: chat-swagger
+          uri: lb://chat-service
+          predicates:
+            - Path=/chat-service/v3/api-docs
+          filters:
+            - RewritePath=/chat-service/v3/api-docs, /v3/api-docs
+        - id: chat-docs
+          uri: lb://chat-service
+          predicates:
+            - Path=/chat-service/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - RewritePath=/chat-service/api/v1/chat/(?<segment>.*), /api/v1/chat/${segment}
+
+      loadbalancer:
+        enable: true
+
+springdoc:
+  enable-native-support: true
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    use-root-path: true
+    urls:
+      - name: Notification Service
+        url: /notification-service/v3/api-docs
+      - name: Payment Service
+        url: /payment-service/v3/api-docs
+      - name: Reservation Service
+        url: /reservation-service/v3/api-docs
+      - name: Caregiver Service
+        url: /caregiver-service/v3/api-docs
+      - name: User Service
+        url: /user-service/v3/api-docs
+      - name: Review Service
+        url: /review-service/v3/api-docs
+      - name: Chat Service
+        url: /chat-service/v3/api-docs
+      - name: AI Service
+        url: /ai-service/v3/api-docs
+      - name: Admin Service
+        url: /admin-service/v3/api-docs

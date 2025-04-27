@@ -1,0 +1,18 @@
+server:
+  port: 9030
+
+spring:
+  application:
+    name: reservation-service
+  profiles:
+    active: local
+  config:
+    import: optional:configserver:http://localhost:8888
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html

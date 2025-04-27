@@ -1,4 +1,22 @@
+
+version: '3.8'
+
 services:
+  config-server:
+    build:
+      context: .
+      dockerfile: ./config-service/Dockerfile
+    ports:
+      - "8888:8888"
+    env_file: .env
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   eureka-server:
     build:
       context: .
@@ -7,8 +25,11 @@ services:
       - "8761:8761"
     networks:
       - app-network
+    depends_on:
+      config-server:
+        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -19,17 +40,195 @@ services:
       dockerfile: ./gateway-service/Dockerfile
     ports:
       - "8000:8000"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=8000
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=true
+      - EUREKA_CLIENT_FETCH_REGISTRY=true
     networks:
       - app-network
     depends_on:
       eureka-server:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/actuator/health" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    platform: linux/amd64
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - app-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    platform: linux/amd64
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:29092,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - app-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    platform: linux/amd64
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      KAFKA_CLUSTERS_0_READONLY: "false"
+    networks:
+      - app-network
+
+  user-service:
+    container_name: user-service
+    build:
+      context: .
+      args:
+        SERVICE_NAME: user-service
+    working_dir: /app
+    command: [ "java", "-jar", "app.jar" ]
+    ports:
+      - "9010:9010"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=9010
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - app-network
+
+  caregiver-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: caregiver-service
+    container_name: caregiver-service
+    ports:
+      - "9020:9020"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=9020
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - app-network
+
+  reservation-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: reservation-service
+    container_name: reservation-service
+    ports:
+      - "9030:9030"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=9030
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - app-network
+
+  payment-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: payment-service
+    container_name: payment-service
+    ports:
+      - "9040:9040"
+    env_file: .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SERVER_PORT=9040
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - app-network
+
+#  notification-service:
+#    build:
+#      context: .
+#      args:
+#        SERVICE_NAME: notification-service
+#    container_name: notification-service
+#    ports:
+#      - "9050:9050"
+#    env_file: .env
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#      - SERVER_PORT=9050
+#      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+#      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+#      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+#    depends_on:
+#      config-server:
+#        condition: service_healthy
+#      eureka-server:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_started
+#    networks:
+#      - app-network
+
 networks:
   app-network:
-    driver: bridge
+    external: true

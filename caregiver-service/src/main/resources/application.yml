@@ -1,0 +1,10 @@
+server:
+  port: 9020
+
+spring:
+  application:
+    name: caregiver-service
+  profiles:
+    active: local
+  config:
+    import: optional:configserver:http://localhost:8888

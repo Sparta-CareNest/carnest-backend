@@ -39,7 +39,7 @@ project(':ai-service') {
 }
 
 
-project(':matching-service') {
+project(':caregiver-service') {
     dependencies {
         implementation project(':common')
     }
@@ -58,7 +58,31 @@ project(':reservation-service') {
     }
 }
 
+project(':payment-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
 project(':user-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
+project(':review-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
+project(':admin-service') {
+    dependencies {
+        implementation project(':common')
+    }
+}
+
+project(':chat-service') {
     dependencies {
         implementation project(':common')
     }
