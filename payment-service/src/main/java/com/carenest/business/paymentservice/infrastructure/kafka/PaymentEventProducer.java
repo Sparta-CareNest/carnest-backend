@@ -13,8 +13,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -36,28 +34,29 @@ public class PaymentEventProducer {
             backoff = @Backoff(delay = 5000, multiplier = 2)
     )
     public void sendPaymentCompletedEvent(Payment payment) {
+        if (payment == null || payment.getPaymentId() == null) {
+            log.error("결제 완료 이벤트 발행 실패: 유효하지 않은 payment 객체");
+            return;
+        }
+
         log.info("결제 완료 이벤트 발행 시작: paymentId={}, reservationId={}",
                 payment.getPaymentId(), payment.getReservationId());
 
-        PaymentCompletedEvent event = PaymentCompletedEvent.builder()
-                .eventId(UUID.randomUUID())
-                .eventTimestamp(LocalDateTime.now())
-                .eventType("PAYMENT_COMPLETED")
-                .version("1.0")
-                .paymentId(payment.getPaymentId())
-                .reservationId(payment.getReservationId())
-                .guardianId(payment.getGuardianId())
-                .caregiverId(payment.getCaregiverId())
-                .amount(payment.getAmount())
-                .paymentMethod(payment.getPaymentMethod())
-                .approvalNumber(payment.getApprovalNumber())
-                .build();
-
-        // 2. 메시지 키 (멱등성 및 파티셔닝 보장)
-        String key = payment.getPaymentId().toString();
-        String topic = "payment-completed";
-
         try {
+            PaymentCompletedEvent event = PaymentCompletedEvent.builder()
+                    .paymentId(payment.getPaymentId())
+                    .reservationId(payment.getReservationId())
+                    .guardianId(payment.getGuardianId())
+                    .caregiverId(payment.getCaregiverId())
+                    .amount(payment.getAmount())
+                    .paymentMethod(payment.getPaymentMethod())
+                    .approvalNumber(payment.getApprovalNumber())
+                    .build();
+
+            // 메시지 키
+            String key = payment.getPaymentId().toString();
+            String topic = "payment-completed";
+
             CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(topic, key, event);
 
             future.whenComplete((result, ex) -> {
@@ -73,6 +72,13 @@ public class PaymentEventProducer {
                 }
             });
 
+            try {
+                future.get(SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                log.debug("결제 완료 이벤트 전송 확인 완료: paymentId={}", payment.getPaymentId());
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                log.warn("결제 완료 이벤트 전송 확인 타임아웃: paymentId={}", payment.getPaymentId(), e);
+            }
+
         } catch (Exception e) {
             log.error("결제 완료 이벤트 발행 중 예외 발생: paymentId={}", payment.getPaymentId(), e);
             throw new KafkaPublishException("결제 완료 이벤트 발행 실패: " + e.getMessage(), e);
@@ -85,15 +91,16 @@ public class PaymentEventProducer {
             backoff = @Backoff(delay = 5000, multiplier = 2)
     )
     public void sendPaymentCancelledEvent(Payment payment) {
+        if (payment == null || payment.getPaymentId() == null) {
+            log.error("결제 취소 이벤트 발행 실패: 유효하지 않은 payment 객체");
+            return;
+        }
+
         log.info("결제 취소 이벤트 발행 시작: paymentId={}, reservationId={}",
                 payment.getPaymentId(), payment.getReservationId());
 
         try {
             PaymentCancelledEvent event = PaymentCancelledEvent.builder()
-                    .eventId(UUID.randomUUID())
-                    .eventTimestamp(LocalDateTime.now())
-                    .eventType("PAYMENT_CANCELLED")
-                    .version("1.0")
                     .paymentId(payment.getPaymentId())
                     .reservationId(payment.getReservationId())
                     .guardianId(payment.getGuardianId())
@@ -122,9 +129,9 @@ public class PaymentEventProducer {
 
             try {
                 future.get(SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                log.info("결제 취소 이벤트 발행 완료 확인: paymentId={}", payment.getPaymentId());
+                log.debug("결제 취소 이벤트 발행 완료 확인: paymentId={}", payment.getPaymentId());
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                log.error("결제 취소 이벤트 동기 확인 중 오류: paymentId={}", payment.getPaymentId(), e);
+                log.warn("결제 취소 이벤트 동기 확인 중 타임아웃: paymentId={}", payment.getPaymentId(), e);
             }
 
         } catch (Exception e) {
@@ -140,15 +147,16 @@ public class PaymentEventProducer {
             backoff = @Backoff(delay = 5000, multiplier = 2)
     )
     public void sendCaregiverPendingEvent(Payment payment) {
+        if (payment == null || payment.getReservationId() == null || payment.getCaregiverId() == null) {
+            log.error("간병인 승인/거절 이벤트 발행 실패: 유효하지 않은 payment 객체");
+            return;
+        }
+
         try {
             log.info("간병인 승인/거절 이벤트 발행 시작: reservationId={}, caregiverId={}",
                     payment.getReservationId(), payment.getCaregiverId());
 
             CaregiverPendingEvent event = CaregiverPendingEvent.builder()
-                    .eventId(UUID.randomUUID())
-                    .eventTimestamp(LocalDateTime.now())
-                    .eventType("CAREGIVER_PENDING")
-                    .version("1.0")
                     .reservationId(payment.getReservationId())
                     .caregiverId(payment.getCaregiverId())
                     .message("새 예약이 수락 대기 상태입니다. 예약 ID: " + payment.getReservationId())
@@ -169,6 +177,13 @@ public class PaymentEventProducer {
                     log.error("간병인 승인/거절 이벤트 발행 실패: paymentId={}, 에러={}", payment.getPaymentId(), ex.getMessage(), ex);
                 }
             });
+
+            try {
+                future.get(SEND_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                log.debug("간병인 이벤트 전송 확인 완료: reservationId={}", payment.getReservationId());
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                log.warn("간병인 이벤트 전송 확인 타임아웃: reservationId={}", payment.getReservationId(), e);
+            }
         } catch (Exception e) {
             log.error("간병인 승인/거절 이벤트 생성 중 예외 발생: paymentId={}, 에러={}",
                     payment.getPaymentId(), e.getMessage(), e);

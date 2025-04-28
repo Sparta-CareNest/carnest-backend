@@ -27,6 +27,7 @@ public class ReservationEventConsumer {
     private final PaymentService paymentService;
     private final PaymentRepository paymentRepository;
     private final IdempotentMessageProcessor idempotentProcessor;
+    private final NotificationEventProducer notificationEventProducer;
 
     @Transactional
     @KafkaListener(
@@ -42,8 +43,8 @@ public class ReservationEventConsumer {
 
         try {
             // 이벤트 중복 처리 방지
-            if (!idempotentProcessor.processIfNotDuplicate(messageKey)) {
-                log.info("이미 처리된a 예약 이벤트: reservationId={}, 중복 메시지 무시", event.getReservationId());
+            if (idempotentProcessor.isProcessed(messageKey)) {
+                log.info("이미 처리된 예약 이벤트: reservationId={}, 중복 메시지 무시", event.getReservationId());
                 acknowledgment.acknowledge();
                 return;
             }
@@ -67,8 +68,15 @@ public class ReservationEventConsumer {
             paymentService.createPayment(request, event.getGuardianId());
             log.info("예약에 대한 결제 생성 완료: reservationId={}", event.getReservationId());
 
-            idempotentProcessor.markAsProcessed(messageKey);
+            // 보호자에게 알림 전송
+            notificationEventProducer.sendNotificationEvent(
+                    event.getGuardianId(),
+                    "PAYMENT_PENDING",
+                    String.format("예약이 접수되었습니다. 결제를 진행해주세요. 예약번호: %s, 금액: %s원",
+                            event.getReservationId(), event.getTotalAmount())
+            );
 
+            idempotentProcessor.markAsProcessed(messageKey);
             acknowledgment.acknowledge();
         } catch (Exception e) {
             log.error("예약 생성 이벤트 처리 중 오류 발생: reservationId={}, error={}",
@@ -91,14 +99,14 @@ public class ReservationEventConsumer {
 
         try {
             // 멱등성 처리
-            if (!idempotentProcessor.processIfNotDuplicate(messageKey)) {
+            if (idempotentProcessor.isProcessed(messageKey)) {
                 log.info("이미 처리된 예약 취소 이벤트: reservationId={}, 중복 메시지 무시", event.getReservationId());
                 acknowledgment.acknowledge();
                 return;
             }
 
             if (event.getPaymentId() == null) {
-                log.error("결제 취소 실패: 예약 취소 이벤트에 paymentId가 없음, reservationId={}", event.getReservationId());
+                log.info("결제 취소 실패: 예약 취소 이벤트에 paymentId가 없음, reservationId={}", event.getReservationId());
                 acknowledgment.acknowledge();
                 return;
             }
@@ -124,7 +132,6 @@ public class ReservationEventConsumer {
 
             // 멱등성 처리
             idempotentProcessor.markAsProcessed(messageKey);
-
             acknowledgment.acknowledge();
         } catch (Exception e) {
             log.error("예약 취소 이벤트 처리 중 오류 발생: reservationId={}, error={}",
@@ -137,17 +144,20 @@ public class ReservationEventConsumer {
             topics = "reservation-created.dlq",
             groupId = "payment-service-dlq-group",
             containerFactory = "deadLetterListenerContainerFactory")
-    public void processDLQReservationCreatedEvent(ConsumerRecord<String, ReservationCreatedEvent> record, Acknowledgment acknowledgment) {
-        ReservationCreatedEvent event = record.value();
-
-        log.warn("DLQ에서 예약 생성 이벤트 처리: reservationId={}, 재처리 시도",
-                event.getReservationId());
-
+    public void processDLQReservationCreatedEvent(ConsumerRecord<String, Object> record, Acknowledgment acknowledgment) {
         try {
-            acknowledgment.acknowledge();
+            log.warn("DLQ에서 예약 생성 이벤트 처리: record={}", record);
+
+            // 관리자에게 알림
+            notificationEventProducer.sendNotificationEvent(
+                    UUID.fromString("00000000-0000-0000-0000-000000000000"), // 관리자 ID
+                    "DLQ_ALERT",
+                    String.format("[중요] 예약 생성 이벤트 처리 실패: 토픽=%s, 파티션=%d, 오프셋=%d",
+                            record.topic(), record.partition(), record.offset())
+            );
         } catch (Exception e) {
-            log.error("DLQ 메시지 처리 중 오류: reservationId={}, error={}",
-                    event.getReservationId(), e.getMessage(), e);
+            log.error("DLQ 메시지 처리 중 오류: error={}", e.getMessage(), e);
+        } finally {
             acknowledgment.acknowledge();
         }
     }
@@ -156,17 +166,20 @@ public class ReservationEventConsumer {
             topics = "reservation-cancelled.dlq",
             groupId = "payment-service-dlq-group",
             containerFactory = "deadLetterListenerContainerFactory")
-    public void processDLQReservationCancelledEvent(ConsumerRecord<String, ReservationCancelledEvent> record, Acknowledgment acknowledgment) {
-        ReservationCancelledEvent event = record.value();
-
-        log.warn("DLQ에서 예약 취소 이벤트 처리: reservationId={}, paymentId={}, 재처리 시도",
-                event.getReservationId(), event.getPaymentId());
-
+    public void processDLQReservationCancelledEvent(ConsumerRecord<String, Object> record, Acknowledgment acknowledgment) {
         try {
-            acknowledgment.acknowledge();
+            log.warn("DLQ에서 예약 취소 이벤트 처리: record={}", record);
+
+            // 관리자에게 알림
+            notificationEventProducer.sendNotificationEvent(
+                    UUID.fromString("00000000-0000-0000-0000-000000000000"), // 관리자 ID
+                    "DLQ_ALERT",
+                    String.format("[중요] 예약 취소 이벤트 처리 실패: 토픽=%s, 파티션=%d, 오프셋=%d",
+                            record.topic(), record.partition(), record.offset())
+            );
         } catch (Exception e) {
-            log.error("DLQ 메시지 처리 중 오류: reservationId={}, error={}",
-                    event.getReservationId(), e.getMessage(), e);
+            log.error("DLQ 메시지 처리 중 오류: error={}", e.getMessage(), e);
+        } finally {
             acknowledgment.acknowledge();
         }
     }
