@@ -1,22 +1,17 @@
 package com.carenest.business.paymentservice.infrastructure.service;
 
-import com.carenest.business.common.event.notification.NotificationEvent;
 import com.carenest.business.paymentservice.domain.model.Payment;
+import com.carenest.business.paymentservice.infrastructure.kafka.NotificationEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final NotificationEventProducer notificationEventProducer;
 
     @Override
     public void sendPaymentSuccessNotification(Payment payment) {
@@ -25,14 +20,14 @@ public class NotificationServiceImpl implements NotificationService {
                     payment.getPaymentId(), payment.getGuardianId());
 
             // 보호자에게 알림 전송
-            sendNotificationEvent(
+            notificationEventProducer.sendNotificationEvent(
                     payment.getGuardianId(),
                     "PAYMENT_SUCCESS",
                     String.format("결제가 완료되었습니다. 금액: %s원", payment.getAmount())
             );
 
             // 간병인에게도 알림
-            sendNotificationEvent(
+            notificationEventProducer.sendNotificationEvent(
                     payment.getCaregiverId(),
                     "PAYMENT_SUCCESS",
                     "새로운 예약의 결제가 완료되었습니다. 확인해주세요."
@@ -51,7 +46,7 @@ public class NotificationServiceImpl implements NotificationService {
                     payment.getPaymentId(), payment.getGuardianId());
 
             // 보호자에게 알림
-            sendNotificationEvent(
+            notificationEventProducer.sendNotificationEvent(
                     payment.getGuardianId(),
                     "PAYMENT_CANCELED",
                     String.format("결제가 취소되었습니다. 금액: %s원, 사유: %s",
@@ -59,7 +54,7 @@ public class NotificationServiceImpl implements NotificationService {
             );
 
             // 간병인에게 알림
-            sendNotificationEvent(
+            notificationEventProducer.sendNotificationEvent(
                     payment.getCaregiverId(),
                     "PAYMENT_CANCELED",
                     "예약이 취소되었습니다."
@@ -77,7 +72,7 @@ public class NotificationServiceImpl implements NotificationService {
             log.info("결제 환불 알림 발행: paymentId={}, guardianId={}",
                     payment.getPaymentId(), payment.getGuardianId());
 
-            sendNotificationEvent(
+            notificationEventProducer.sendNotificationEvent(
                     payment.getGuardianId(),
                     "PAYMENT_REFUNDED",
                     String.format("결제가 환불되었습니다. 금액: %s원",
@@ -88,29 +83,5 @@ public class NotificationServiceImpl implements NotificationService {
         } catch (Exception e) {
             log.error("결제 환불 알림 이벤트 발행 실패", e);
         }
-    }
-
-    private void sendNotificationEvent(UUID receiverId, String notificationType, String content) {
-        NotificationEvent event = NotificationEvent.builder()
-                .receiverId(receiverId)
-                .notificationType(notificationType)
-                .content(content)
-                .build();
-
-        String key = receiverId.toString();
-        CompletableFuture<SendResult<String, Object>> future = kafkaTemplate.send(
-                "notification-event", key, event);
-
-        future.whenComplete((result, ex) -> {
-            if (ex == null) {
-                log.info("알림 이벤트 발행 성공: receiverId={}, type={}", receiverId, notificationType);
-                log.debug("메시지 발행 완료: topic={}, partition={}, offset={}",
-                        result.getRecordMetadata().topic(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-            } else {
-                log.error("알림 이벤트 발행 실패: receiverId={}, type={}", receiverId, notificationType, ex);
-            }
-        });
     }
 }
