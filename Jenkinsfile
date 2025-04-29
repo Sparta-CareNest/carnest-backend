@@ -13,7 +13,19 @@ pipeline {
             }
         }
 
-        // 1. eureka-service Build
+        // 1. Prepare .env file (Clone 후 바로)
+        stage('Prepare .env file') {
+            steps {
+                withCredentials([file(credentialsId: 'carenest-env', variable: 'ENV_FILE')]) {
+                    sh '''
+                        cp $ENV_FILE ${WORKSPACE}/.env
+                    '''
+                    echo '.env 파일 준비 완료 (Jenkins Credentials에서 가져옴)'
+                }
+            }
+        }
+
+        // 2. eureka-service Build
         stage('Build eureka-service image') {
             steps {
                 dir('eureka-service') {
@@ -28,7 +40,7 @@ pipeline {
             }
         }
 
-        // 2. config-service Build
+        // 3. config-service Build
         stage('Build config-service image') {
             steps {
                 dir('config-service') {
@@ -43,7 +55,7 @@ pipeline {
             }
         }
 
-        // 3. Remove old containers
+        // 4. Remove old containers
         stage('Remove Previous containers') {
             steps {
                 script {
@@ -58,7 +70,7 @@ pipeline {
             }
         }
 
-        // 4. Run New config-service first
+        // 5. Run New config-service first
         stage('Run New config-service container') {
             steps {
                 sh """
@@ -70,7 +82,7 @@ pipeline {
             }
         }
 
-        // 5. Run New eureka-service
+        // 6. Run New eureka-service
         stage('Run New eureka-service container') {
             steps {
                 sh '''
