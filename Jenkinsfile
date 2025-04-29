@@ -57,7 +57,7 @@ pipeline {
                     string(credentialsId: 'git-uri', variable: 'GIT_URI'),
                     string(credentialsId: 'git-paths', variable: 'GIT_SEARCH_PATHS'),
                     string(credentialsId: 'git-label', variable: 'GIT_DEFAULT_LABEL'),
-                    string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY'),
+                    file(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY_FILE'),
                     string(credentialsId: 'ssh-host-key', variable: 'SSH_HOST_KEY'),
                     string(credentialsId: 'ssh-algorithm', variable: 'SSH_HOST_KEY_ALGORITHM'),
                     string(credentialsId: 'ssh-passphrase', variable: 'SSH_PASSPHRASE')
@@ -68,7 +68,8 @@ pipeline {
                         -e GIT_SEARCH_PATHS="\$GIT_SEARCH_PATHS" \
                         -e GIT_DEFAULT_LABEL="\$GIT_DEFAULT_LABEL" \
                         -e GIT_IGNORE_LOCAL_SSH_SETTINGS=true \
-                        -e SSH_PRIVATE_KEY="\$SSH_PRIVATE_KEY" \
+                        -v \$SSH_PRIVATE_KEY_FILE:/run/secrets/ssh_key:ro \
+                        -e SSH_PRIVATE_KEY=/run/secrets/ssh_key \
                         -e SSH_HOST_KEY="\$SSH_HOST_KEY" \
                         -e SSH_HOST_KEY_ALGORITHM="\$SSH_HOST_KEY_ALGORITHM" \
                         -e SSH_PASSPHRASE="\$SSH_PASSPHRASE" \
