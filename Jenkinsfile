@@ -18,11 +18,11 @@ pipeline {
             steps {
                 withCredentials([
                     file(credentialsId: 'carenest-env', variable: 'ENV_FILE'),
-                    file(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY_FILE')
+                    string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY_FILE')
                 ]) {
                     sh '''
                         cp $ENV_FILE ${WORKSPACE}/.env
-                        echo "SSH_PRIVATE_KEY=$(cat $SSH_PRIVATE_KEY_FILE)" >> ${WORKSPACE}/.env
+
                     '''
                     echo '✅ .env 파일 준비 완료'
                 }
@@ -71,11 +71,12 @@ pipeline {
 
         stage('Run config-service') {
             steps {
-                sh '''
+                sh """
                     ${DOCKER} run --name config-service -d -p 8888:8888 \
                     --env-file ${WORKSPACE}/.env \
+                    -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" \
                     jongmin627/config-service
-                '''
+                """
                 echo '🚀 config-service 컨테이너 실행 완료'
             }
         }
