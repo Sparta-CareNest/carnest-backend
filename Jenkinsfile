@@ -9,53 +9,52 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 checkout scm
-                echo 'Checkout SCM 성공'
+                echo '✅ SCM 클론 성공'
             }
         }
 
-        // 1. Prepare .env file (Clone 후 바로)
-        stage('Prepare .env file') {
+        // .env 파일 준비 + SSH 키 가져오기
+        stage('Prepare Environment') {
             steps {
-                withCredentials([file(credentialsId: 'carenest-env', variable: 'ENV_FILE')]) {
+                withCredentials([
+                    file(credentialsId: 'carenest-env', variable: 'ENV_FILE'),
+                    string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY')
+                ]) {
                     sh '''
                         cp $ENV_FILE ${WORKSPACE}/.env
+                        echo "SSH_PRIVATE_KEY=$SSH_PRIVATE_KEY" >> ${WORKSPACE}/.env
                     '''
-                    echo '.env 파일 준비 완료 (Jenkins Credentials에서 가져옴)'
+                    echo '✅ .env 파일 준비 완료'
                 }
             }
         }
 
-        // 2. eureka-service Build
         stage('Build eureka-service image') {
             steps {
                 dir('eureka-service') {
                     sh '''
-                        ls -al
                         chmod +x ./gradlew
                         ./gradlew clean build
                         ${DOCKER} build -t jongmin627/eureka-service .
                     '''
                 }
-                echo 'eureka-service Docker Image 빌드 완료'
+                echo '✅ eureka-service Docker Image 빌드 완료'
             }
         }
 
-        // 3. config-service Build
         stage('Build config-service image') {
             steps {
                 dir('config-service') {
                     sh '''
-                        ls -al
                         chmod +x ./gradlew
                         ./gradlew clean build
                         ${DOCKER} build -t jongmin627/config-service .
                     '''
                 }
-                echo 'config-service Docker Image 빌드 완료'
+                echo '✅ config-service Docker Image 빌드 완료'
             }
         }
 
-        // 4. Remove old containers
         stage('Remove Previous containers') {
             steps {
                 script {
@@ -66,30 +65,28 @@ pipeline {
                         ${DOCKER} rm config-service || true
                     '''
                 }
-                echo '이전 컨테이너 제거 완료 (없는 경우 무시)'
+                echo '🧹 이전 컨테이너 제거 완료'
             }
         }
 
-        // 5. Run New config-service first
-        stage('Run New config-service container') {
+        stage('Run config-service') {
             steps {
-                sh """
+                sh '''
                     ${DOCKER} run --name config-service -d -p 8888:8888 \
                     --env-file ${WORKSPACE}/.env \
                     jongmin627/config-service
-                """
-                echo '새로운 config-service 컨테이너 실행 완료'
+                '''
+                echo '🚀 config-service 컨테이너 실행 완료'
             }
         }
 
-        // 6. Run New eureka-service
-        stage('Run New eureka-service container') {
+        stage('Run eureka-service') {
             steps {
                 sh '''
                     ${DOCKER} run --name eureka-service -d -p 8761:8761 \
                     jongmin627/eureka-service
                 '''
-                echo '새로운 eureka-service 컨테이너 실행 완료'
+                echo '🚀 eureka-service 컨테이너 실행 완료'
             }
         }
     }
