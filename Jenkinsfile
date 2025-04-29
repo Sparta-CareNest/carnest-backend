@@ -69,7 +69,7 @@ pipeline {
                         -e GIT_DEFAULT_LABEL="\$GIT_DEFAULT_LABEL" \
                         -e GIT_IGNORE_LOCAL_SSH_SETTINGS=true \
                         -v \$SSH_PRIVATE_KEY_FILE:/run/secrets/ssh_key:ro \
-                        -e SSH_PRIVATE_KEY=/run/secrets/ssh_key \
+                        -e SSH_PRIVATE_KEY_PATH=/run/secrets/ssh_key \
                         -e SSH_HOST_KEY="\$SSH_HOST_KEY" \
                         -e SSH_HOST_KEY_ALGORITHM="\$SSH_HOST_KEY_ALGORITHM" \
                         -e SSH_PASSPHRASE="\$SSH_PASSPHRASE" \
