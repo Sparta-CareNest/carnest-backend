@@ -61,11 +61,11 @@ pipeline {
         // 4. Run New config-service first
         stage('Run New config-service container') {
             steps {
-                sh '''
+                sh """
                     ${DOCKER} run --name config-service -d -p 8888:8888 \
-                    --env-file .env \
+                    --env-file ${WORKSPACE}/.env \
                     jongmin627/config-service
-                '''
+                """
                 echo '새로운 config-service 컨테이너 실행 완료'
             }
         }
@@ -75,7 +75,6 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER} run --name eureka-service -d -p 8761:8761 \
-                    --env-file ${WORKSPACE}/.env \
                     jongmin627/eureka-service
                 '''
                 echo '새로운 eureka-service 컨테이너 실행 완료'
