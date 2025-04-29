@@ -14,12 +14,10 @@ pipeline {
 
         stage('Build CareNest') {
             steps {
-                dir('CareNest') {
-                    sh '''
-                        chmod +x gradlew
-                        ./gradlew clean build
-                    '''
-                }
+                sh '''
+                    chmod +x gradlew
+                    ./gradlew clean build
+                '''
             }
         }
 
