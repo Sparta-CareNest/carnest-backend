@@ -27,6 +27,9 @@ dependencies {
 
     // monitor
     implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // 테스트 라이브러리 추가
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 dependencyManagement {
