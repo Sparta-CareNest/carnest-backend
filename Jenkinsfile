@@ -13,22 +13,6 @@ pipeline {
             }
         }
 
-        // .env 파일 준비 + SSH 키 가져오기
-        stage('Prepare Environment') {
-            steps {
-                withCredentials([
-                    file(credentialsId: 'carenest-env', variable: 'ENV_FILE'),
-                    string(credentialsId: 'ssh-private-key', variable: 'SSH_KEY')
-                ]) {
-                    sh """
-                        cp \$ENV_FILE ${WORKSPACE}/.env
-                        echo 'SSH_PRIVATE_KEY="""\n${SSH_KEY}\n"""' >> ${WORKSPACE}/.env
-                    """
-                    echo '✅ .env 파일 준비 완료'
-                }
-            }
-        }
-
         stage('Build eureka-service image') {
             steps {
                 dir('eureka-service') {
@@ -57,27 +41,41 @@ pipeline {
 
         stage('Remove Previous containers') {
             steps {
-                script {
-                    sh '''
-                        ${DOCKER} stop eureka-service || true
-                        ${DOCKER} rm eureka-service || true
-                        ${DOCKER} stop config-service || true
-                        ${DOCKER} rm config-service || true
-                    '''
-                }
+                sh '''
+                    ${DOCKER} stop config-service || true
+                    ${DOCKER} rm config-service || true
+                    ${DOCKER} stop eureka-service || true
+                    ${DOCKER} rm eureka-service || true
+                '''
                 echo '🧹 이전 컨테이너 제거 완료'
             }
         }
 
         stage('Run config-service') {
             steps {
-                sh """
-                    ${DOCKER} run --name config-service -d -p 8888:8888 \
-                    --env-file ${WORKSPACE}/.env \
-                    -e SSH_PRIVATE_KEY="$SSH_PRIVATE_KEY" \
-                    jongmin627/config-service
-                """
-                echo '🚀 config-service 컨테이너 실행 완료'
+                withCredentials([
+                    string(credentialsId: 'git-uri', variable: 'GIT_URI'),
+                    string(credentialsId: 'git-paths', variable: 'GIT_SEARCH_PATHS'),
+                    string(credentialsId: 'git-label', variable: 'GIT_DEFAULT_LABEL'),
+                    string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY'),
+                    string(credentialsId: 'ssh-host-key', variable: 'SSH_HOST_KEY'),
+                    string(credentialsId: 'ssh-algorithm', variable: 'SSH_HOST_KEY_ALGORITHM'),
+                    string(credentialsId: 'ssh-passphrase', variable: 'SSH_PASSPHRASE')
+                ]) {
+                    sh """
+                        ${DOCKER} run --name config-service -d -p 8888:8888 \
+                        -e GIT_URI="\$GIT_URI" \
+                        -e GIT_SEARCH_PATHS="\$GIT_SEARCH_PATHS" \
+                        -e GIT_DEFAULT_LABEL="\$GIT_DEFAULT_LABEL" \
+                        -e GIT_IGNORE_LOCAL_SSH_SETTINGS=true \
+                        -e SSH_PRIVATE_KEY="\$SSH_PRIVATE_KEY" \
+                        -e SSH_HOST_KEY="\$SSH_HOST_KEY" \
+                        -e SSH_HOST_KEY_ALGORITHM="\$SSH_HOST_KEY_ALGORITHM" \
+                        -e SSH_PASSPHRASE="\$SSH_PASSPHRASE" \
+                        jongmin627/config-service
+                    """
+                    echo '🚀 config-service 컨테이너 실행 완료'
+                }
             }
         }
 
