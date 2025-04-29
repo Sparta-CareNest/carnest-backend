@@ -51,31 +51,35 @@ pipeline {
             }
         }
 
-        stage('Run config-service') {
+        stage('Prepare .env and Run config-service') {
             steps {
                 withCredentials([
                     string(credentialsId: 'git-uri', variable: 'GIT_URI'),
                     string(credentialsId: 'git-paths', variable: 'GIT_SEARCH_PATHS'),
                     string(credentialsId: 'git-label', variable: 'GIT_DEFAULT_LABEL'),
-                    file(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY_FILE'),
+                    file(credentialsId: 'ssh-private-key', variable: 'SSH_KEY_FILE'),
                     string(credentialsId: 'ssh-host-key', variable: 'SSH_HOST_KEY'),
                     string(credentialsId: 'ssh-algorithm', variable: 'SSH_HOST_KEY_ALGORITHM'),
                     string(credentialsId: 'ssh-passphrase', variable: 'SSH_PASSPHRASE')
                 ]) {
-                    sh """
+                    sh '''
+                        echo "GIT_URI=$GIT_URI" > ${WORKSPACE}/.env
+                        echo "GIT_SEARCH_PATHS=$GIT_SEARCH_PATHS" >> ${WORKSPACE}/.env
+                        echo "GIT_DEFAULT_LABEL=$GIT_DEFAULT_LABEL" >> ${WORKSPACE}/.env
+                        echo "GIT_IGNORE_LOCAL_SSH_SETTINGS=true" >> ${WORKSPACE}/.env
+                        echo "SSH_HOST_KEY=$SSH_HOST_KEY" >> ${WORKSPACE}/.env
+                        echo "SSH_HOST_KEY_ALGORITHM=$SSH_HOST_KEY_ALGORITHM" >> ${WORKSPACE}/.env
+                        echo "SSH_PASSPHRASE=$SSH_PASSPHRASE" >> ${WORKSPACE}/.env
+                        echo -n "SSH_PRIVATE_KEY=" >> ${WORKSPACE}/.env
+                        cat $SSH_KEY_FILE | sed ':a;N;$!ba;s/\\n/\\\\n/g' | tr '\n' '\\n' >> ${WORKSPACE}/.env
+                    '''
+
+                    sh '''
                         ${DOCKER} run --name config-service -d -p 8888:8888 \
-                        -e GIT_URI="\$GIT_URI" \
-                        -e GIT_SEARCH_PATHS="\$GIT_SEARCH_PATHS" \
-                        -e GIT_DEFAULT_LABEL="\$GIT_DEFAULT_LABEL" \
-                        -e GIT_IGNORE_LOCAL_SSH_SETTINGS=true \
-                        -v \$SSH_PRIVATE_KEY_FILE:/run/secrets/ssh_key:ro \
-                        -e SSH_PRIVATE_KEY_PATH=/run/secrets/ssh_key \
-                        -e SSH_HOST_KEY="\$SSH_HOST_KEY" \
-                        -e SSH_HOST_KEY_ALGORITHM="\$SSH_HOST_KEY_ALGORITHM" \
-                        -e SSH_PASSPHRASE="\$SSH_PASSPHRASE" \
+                        --env-file ${WORKSPACE}/.env \
                         jongmin627/config-service
-                    """
-                    echo '🚀 config-service 컨테이너 실행 완료'
+                    '''
+                    echo '🚀 config-service 실행 완료'
                 }
             }
         }
