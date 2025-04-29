@@ -87,3 +87,10 @@ project(':chat-service') {
         implementation project(':common')
     }
 }
+
+bootJar {
+    enabled = false
+}
+jar {
+    enabled = false
+}
