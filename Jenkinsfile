@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER = 'sudo docker'
+        DOCKER = 'docker'
     }
 
     stages {
