@@ -75,6 +75,7 @@ pipeline {
             steps {
                 sh '''
                     ${DOCKER} run --name eureka-service -d -p 8761:8761 \
+                    --env-file ${WORKSPACE}/.env \
                     jongmin627/eureka-service
                 '''
                 echo '새로운 eureka-service 컨테이너 실행 완료'
