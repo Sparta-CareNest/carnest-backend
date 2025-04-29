@@ -18,11 +18,11 @@ pipeline {
             steps {
                 withCredentials([
                     file(credentialsId: 'carenest-env', variable: 'ENV_FILE'),
-                    string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY')
+                    string(credentialsId: 'ssh-private-key', variable: 'SSH_KEY')
                 ]) {
                     sh """
                         cp \$ENV_FILE ${WORKSPACE}/.env
-                        echo 'SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}"' >> ${WORKSPACE}/.env
+                        echo 'SSH_PRIVATE_KEY="""\n${SSH_KEY}\n"""' >> ${WORKSPACE}/.env
                     """
                     echo '✅ .env 파일 준비 완료'
                 }
