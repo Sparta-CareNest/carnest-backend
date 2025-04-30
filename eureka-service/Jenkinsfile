@@ -1,0 +1,37 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER = 'docker'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Eureka Service') {
+            steps {
+                sh '''
+                    chmod +x ./gradlew
+                    ./gradlew clean build
+                    ${DOCKER} build -t your-docker-id/eureka-service .
+                '''
+            }
+        }
+
+        stage('Deploy Eureka Service') {
+            steps {
+                sh '''
+                    ${DOCKER} stop eureka-service || true
+                    ${DOCKER} rm eureka-service || true
+
+                    ${DOCKER} run --name eureka-service -d -p 8761:8761 \
+                    your-docker-id/eureka-service
+                '''
+            }
+        }
+    }
+}
