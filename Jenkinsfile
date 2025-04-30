@@ -15,34 +15,26 @@ pipeline {
 
         stage('Build config-server JAR') {
             steps {
-                dir('config-server') {
-                    sh '''
-                        chmod +x ../gradlew
-                        ../gradlew :config-server:clean :config-server:build -x test
-                    '''
-                }
+                sh '''
+                    chmod +x ./gradlew
+                    ./gradlew :config-server:clean :config-server:build -x test
+                '''
             }
         }
 
         stage('Build eureka-server JAR') {
             steps {
-                dir('eureka-server') {
-                    sh '''
-                        chmod +x ../gradlew
-                        ../gradlew :eureka-server:clean :eureka-server:build -x test
-                    '''
-                }
+                sh '''
+                    ./gradlew :eureka-server:clean :eureka-server:build -x test
+                '''
             }
         }
 
         stage('Build gateway-server JAR') {
             steps {
-                dir('gateway-server') {
-                    sh '''
-                        chmod +x ../gradlew
-                        ../gradlew :gateway-server:clean :gateway-server:build -x test
-                    '''
-                }
+                sh '''
+                    ./gradlew :gateway-server:clean :gateway-server:build -x test
+                '''
             }
         }
 
