@@ -9,6 +9,8 @@ services:
     ports:
       - "8888:8888"
     env_file: .env
+    volumes:
+      - ./id_rsa:/run/secrets/id_rsa:ro
     networks:
       - app-network
     healthcheck:
