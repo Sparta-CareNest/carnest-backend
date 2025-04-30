@@ -47,9 +47,9 @@ pipeline {
                         echo "SSH_HOST_KEY=$SSH_HOST_KEY" >> ${WORKSPACE}/.env
                         echo "SSH_HOST_KEY_ALGORITHM=$SSH_HOST_KEY_ALGORITHM" >> ${WORKSPACE}/.env
                         echo "SSH_PASSPHRASE=$SSH_PASSPHRASE" >> ${WORKSPACE}/.env
-                        echo "$SSH_PRIVATE_KEY" > $WORKSPACE/id_rsa
-                        export SSH_PRIVATE_KEY="$(cat $WORKSPACE/id_rsa)"
-                        echo "SSH_PRIVATE_KEY=\"$SSH_PRIVATE_KEY\"" >> $WORKSPACE/.env
+                        echo "$SSH_PRIVATE_KEY" > ${WORKSPACE}/id_rsa
+                        export SSH_PRIVATE_KEY="$(cat ${WORKSPACE}/id_rsa)"
+                        echo "SSH_PRIVATE_KEY=\"$SSH_PRIVATE_KEY\"" >> ${WORKSPACE}/.env
 
                     '''
 
