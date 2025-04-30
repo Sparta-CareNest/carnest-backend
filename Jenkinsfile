@@ -13,27 +13,40 @@ pipeline {
             }
         }
 
-        stage('Build config-server JAR') {
+        stage('Build config-service JAR') {
             steps {
                 sh '''
                     chmod +x ./gradlew
-                    ./gradlew :config-server:clean :config-server:build -x test
+                    ./gradlew :config-service:clean :config-service:build -x test
                 '''
             }
         }
 
-        stage('Build eureka-server JAR') {
+        stage('Build eureka-service JAR') {
             steps {
                 sh '''
-                    ./gradlew :eureka-server:clean :eureka-server:build -x test
+                    ./gradlew :eureka-service:clean :eureka-service:build -x test
                 '''
             }
         }
 
-        stage('Build gateway-server JAR') {
+        stage('Build gateway-service JAR') {
             steps {
                 sh '''
-                    ./gradlew :gateway-server:clean :gateway-server:build -x test
+                    ./gradlew :gateway-service:clean :gateway-service:build -x test
+                '''
+            }
+        }
+
+        stage('Create Docker Network if not exists') {
+            steps {
+                sh '''
+                    if [ -z "$(docker network ls --filter name=^app-network$ --format '{{ .Name }}')" ]; then
+                        echo "📡 Docker network 'app-network' 생성 중..."
+                        docker network create app-network
+                    else
+                        echo "✅ Docker network 'app-network' 이미 존재함"
+                    fi
                 '''
             }
         }
