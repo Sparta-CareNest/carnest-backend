@@ -55,7 +55,7 @@ pipeline {
                         ${DOCKER} stop config-service || true
                         ${DOCKER} rm config-service || true
 
-                        ${DOCKER} run --name config-service -d -p 8888:8888 \
+                        ${DOCKER} run -v /home/codejomo99/env:${WORKSPACE} --name config-service -d -p 8888:8888 \
                         --env-file ${WORKSPACE}/.env \
                         jongmin627/config-service
                     '''
