@@ -1,11 +1,5 @@
-# eureka-service/Dockerfile
-FROM openjdk:17-jdk AS builder
-WORKDIR /app
-COPY . /app
-
-RUN ./gradlew bootJar -x test
-
-FROM openjdk:17
-WORKDIR /app
-COPY --from=builder /app/build/libs/*.jar app.jar
+FROM openjdk:17-ea-11-jdk-slim
+VOLUME /tmp
+ARG JAR_FILE=build/libs/*jar
+COPY ${JAR_FILE} app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

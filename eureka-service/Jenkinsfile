@@ -2,44 +2,49 @@ pipeline {
     agent any
 
     environment {
-        DOCKER = 'docker' // 필요시 'sudo docker'
+        DOCKER = 'docker'
     }
 
     stages {
         stage('Clone Repository') {
             steps {
                 checkout scm
-                echo 'Repository cloned'
+                echo 'Checkout SCM 성공'
             }
         }
 
-        stage('Build eureka-service') {
+        stage('Build image') {
             steps {
-                sh './gradlew :eureka-service:bootJar -x test'
-                echo 'Gradle build finished'
+                dir('eureka-service') {
+                    sh '''
+                        ls -al
+                        chmod +x ./gradlew
+                        ./gradlew clean build
+                        ${DOCKER} build -t jongmin627/eureka-service .
+                    '''
+                }
+                echo 'Build Docker Image 성공'
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t jongmin627/eureka-service -f eureka-service/Dockerfile .'
-                echo 'Docker image built'
-            }
-        }
-
-        stage('Deploy Container') {
+        stage('Remove Previous container') {
             steps {
                 script {
-                    try {
-                        sh 'docker stop eureka-service || true'
-                        sh 'docker rm eureka-service || true'
-                    } catch (e) {
-                        echo 'No running container to stop'
-                    }
-
-                    sh 'docker run --name eureka-service -d -p 8761:8761 jongmin627/eureka-service'
-                    echo 'Container started'
+                    sh """
+                        ${DOCKER} stop eureka-service || true
+                        ${DOCKER} rm eureka-service || true
+                    """
                 }
+                echo '이전 컨테이너 제거 완료 (없는 경우 무시)'
+            }
+        }
+
+        stage('Run New container') {
+            steps {
+                sh """
+                    ${DOCKER} run --name eureka-service -d -p 8761:8761 jongmin627/eureka-service
+                """
+                echo '새로운 Eureka-Service 컨테이너 실행 성공'
             }
         }
     }
