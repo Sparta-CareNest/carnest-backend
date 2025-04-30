@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DOCKER = 'docker'
+        SSH_PRIVATE_KEY = credentials('ssh-private-key')
     }
 
     stages {
