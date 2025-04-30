@@ -1,7 +1,8 @@
 # eureka-service/Dockerfile
-FROM gradle:8.2.1-jdk17 AS builder
+FROM openjdk:17-jdk AS builder
 WORKDIR /app
-COPY . .
+COPY . /app
+
 RUN ./gradlew bootJar -x test
 
 FROM openjdk:17

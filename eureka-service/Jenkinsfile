@@ -2,35 +2,44 @@ pipeline {
     agent any
 
     environment {
-        DOCKER = 'docker'
+        DOCKER = 'docker' // 필요시 'sudo docker'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
                 checkout scm
+                echo 'Repository cloned'
             }
         }
 
-        stage('Build Eureka Service') {
+        stage('Build eureka-service') {
             steps {
-                sh '''
-                    chmod +x ./gradlew
-                    ./gradlew bootJar -x test
-                    ${DOCKER} build -t jongmin627/eureka-service .
-                '''
+                sh './gradlew :eureka-service:bootJar -x test'
+                echo 'Gradle build finished'
             }
         }
 
-        stage('Deploy Eureka Service') {
+        stage('Build Docker Image') {
             steps {
-                sh '''
-                    ${DOCKER} stop eureka-service || true
-                    ${DOCKER} rm eureka-service || true
+                sh 'docker build -t jongmin627/eureka-service -f eureka-service/Dockerfile .'
+                echo 'Docker image built'
+            }
+        }
 
-                    ${DOCKER} run --name eureka-service -d -p 8761:8761 \
-                    jongmin627/eureka-service
-                '''
+        stage('Deploy Container') {
+            steps {
+                script {
+                    try {
+                        sh 'docker stop eureka-service || true'
+                        sh 'docker rm eureka-service || true'
+                    } catch (e) {
+                        echo 'No running container to stop'
+                    }
+
+                    sh 'docker run --name eureka-service -d -p 8761:8761 jongmin627/eureka-service'
+                    echo 'Container started'
+                }
             }
         }
     }
