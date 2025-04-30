@@ -17,7 +17,7 @@ pipeline {
                 sh '''
                     chmod +x ./gradlew
                     ./gradlew clean build
-                    ${DOCKER} build -t your-docker-id/eureka-service .
+                    ${DOCKER} build -t jongmin627/eureka-service .
                 '''
             }
         }
