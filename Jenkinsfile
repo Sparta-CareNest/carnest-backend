@@ -13,29 +13,16 @@ pipeline {
             }
         }
 
-        stage('Build config-service JAR') {
-            steps {
-                sh '''
-                    chmod +x ./gradlew
-                    ./gradlew :config-service:clean :config-service:build -x test
-                '''
-            }
-        }
 
-        stage('Build eureka-service JAR') {
-            steps {
-                sh '''
-                    ./gradlew :eureka-service:clean :eureka-service:build -x test
-                '''
-            }
-        }
-
-        stage('Build gateway-service JAR') {
-            steps {
-                sh '''
-                    ./gradlew :gateway-service:clean :gateway-service:build -x test
-                '''
-            }
+        stage('Build Services') {
+              steps {
+                    sh '''
+                        chmod +x ./gradlew
+                        ./gradlew :config-service:build --build-cache -x test
+                        ./gradlew :eureka-service:build --build-cache -x test
+                        ./gradlew :gateway-service:build --build-cache -x test
+                    '''
+             }
         }
 
         stage('Create Docker Network if not exists') {
