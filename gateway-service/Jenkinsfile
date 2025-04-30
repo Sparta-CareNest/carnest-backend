@@ -20,7 +20,7 @@ pipeline {
                         ls -al
                         chmod +x ./gradlew
                         ./gradlew clean build
-                        ${DOCKER} build -t jongmin627/eureka-service .
+                        ${DOCKER} build -t jongmin627/gateway-service .
                     '''
                 }
                 echo '✅ gateway-service Docker Image 빌드 성공'
@@ -38,30 +38,29 @@ pipeline {
         }
 
         stage('Create Docker Network if not exists') {
-                    steps {
-                        script {
-                            sh """
-                                if [ -z "\$(docker network ls --filter name=^msa-net\$ --format='{{ .Name }}')" ]; then
-                                  echo "Creating msa-net network..."
-                                  docker network create msa-net
-                                else
-                                  echo "Docker network msa-net already exists"
-                                fi
-                            """
-                        }
-                    }
+            steps {
+                script {
+                    sh """
+                        if [ -z "\$(docker network ls --filter name=^msa-net\$ --format='{{ .Name }}')" ]; then
+                          echo "Creating msa-net network..."
+                          docker network create msa-net
+                        else
+                          echo "Docker network msa-net already exists"
+                        fi
+                    """
                 }
+            }
         }
 
         stage('Run New container') {
-                steps {
-                    sh """
-                        ${DOCKER} run --name gateway-service \
-                         --network msa-net \
-                         -d -p 8000:8000 jongmin627/gateway-service
-                    """
-                    echo '새로운 Gateway-Service 컨테이너 실행 성공'
-                }
+            steps {
+                sh """
+                    ${DOCKER} run --name gateway-service \
+                     --network msa-net \
+                     -d -p 8000:8000 jongmin627/gateway-service
+                """
+                echo '🚀 Gateway-Service 컨테이너 실행 성공'
+            }
         }
     }
 }
