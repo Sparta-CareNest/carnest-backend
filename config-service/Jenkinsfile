@@ -33,7 +33,7 @@ pipeline {
                     string(credentialsId: 'git-uri', variable: 'GIT_URI'),
                     string(credentialsId: 'git-paths', variable: 'GIT_SEARCH_PATHS'),
                     string(credentialsId: 'git-label', variable: 'GIT_DEFAULT_LABEL'),
-                    file(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY'),
+                    string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY'),
                     string(credentialsId: 'ssh-host-key', variable: 'SSH_HOST_KEY'),
                     string(credentialsId: 'ssh-algorithm', variable: 'SSH_HOST_KEY_ALGORITHM'),
                     string(credentialsId: 'ssh-passphrase', variable: 'SSH_PASSPHRASE')
