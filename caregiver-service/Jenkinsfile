@@ -18,8 +18,7 @@ pipeline {
                 dir('caregiver-service') {
                     sh '''
                         ls -al
-                        chmod +x ./gradlew
-                        ./gradlew clean build
+                        gradle clean build
                         ${DOCKER} build -t jongmin627/caregiver-service .
                     '''
                 }
