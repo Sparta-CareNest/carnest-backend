@@ -39,7 +39,7 @@ pipeline {
                     string(credentialsId: 'ssh-passphrase', variable: 'SSH_PASSPHRASE')
                 ]) {
                     sh '''
-                        echo "$SSH_PRIVATE_KEY"
+
                         echo "GIT_URI=$GIT_URI" > ${WORKSPACE}/.env
                         echo "GIT_SEARCH_PATHS=$GIT_SEARCH_PATHS" >> ${WORKSPACE}/.env
                         echo "GIT_DEFAULT_LABEL=$GIT_DEFAULT_LABEL" >> ${WORKSPACE}/.env
@@ -47,8 +47,8 @@ pipeline {
                         echo "SSH_HOST_KEY=$SSH_HOST_KEY" >> ${WORKSPACE}/.env
                         echo "SSH_HOST_KEY_ALGORITHM=$SSH_HOST_KEY_ALGORITHM" >> ${WORKSPACE}/.env
                         echo "SSH_PASSPHRASE=$SSH_PASSPHRASE" >> ${WORKSPACE}/.env
-                        echo -n "SSH_PRIVATE_KEY=" >> ${WORKSPACE}/.env
-                        cat $SSH_KEY_FILE | sed ':a;N;$!ba;s/\\n/\\\\n/g' | tr '\n' '\\n' >> ${WORKSPACE}/.env
+                        echo -e "SSH_PRIVATE_KEY=$SSH_PRIVATE_KEY" >> ${WORKSPACE}/.env
+
                     '''
 
                     sh '''
