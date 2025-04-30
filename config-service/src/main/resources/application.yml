@@ -17,7 +17,7 @@ spring:
           ignore-local-ssh-settings: ${GIT_IGNORE_LOCAL_SSH_SETTINGS}
           host-key: ${SSH_HOST_KEY}
           host-key-algorithm: ${SSH_HOST_KEY_ALGORITHM}
-          private-key: ${SSH_PRIVATE_KEY}
+          private-key: ${SPRING_CLOUD_CONFIG_SERVER_GIT_PRIVATEKEY}
           passphrase: ${SSH_PASSPHRASE}
 
 management:
