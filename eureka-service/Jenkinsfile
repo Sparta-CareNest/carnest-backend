@@ -39,10 +39,27 @@ pipeline {
             }
         }
 
+        stage('Create Docker Network if not exists') {
+            steps {
+                script {
+                    sh """
+                        if [ -z "\$(docker network ls --filter name=^msa-net\$ --format='{{ .Name }}')" ]; then
+                          echo "Creating msa-net network..."
+                          docker network create msa-net
+                        else
+                          echo "Docker network msa-net already exists"
+                        fi
+                    """
+                }
+            }
+        }
+
         stage('Run New container') {
             steps {
                 sh """
-                    ${DOCKER} run --name eureka-service -d -p 8761:8761 jongmin627/eureka-service
+                    ${DOCKER} run --name eureka-service \
+                     --network msa-net \
+                     -d -p 8761:8761 jongmin627/eureka-service
                 """
                 echo '새로운 Eureka-Service 컨테이너 실행 성공'
             }

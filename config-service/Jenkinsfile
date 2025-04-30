@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER = 'docker'
-        SSH_PRIVATE_KEY = credentials('ssh-private-key')
+
     }
 
     stages {
@@ -26,6 +26,22 @@ pipeline {
                 echo '✅ config-service Docker Image 빌드 성공'
             }
         }
+
+        stage('Create Docker Network if not exists') {
+                    steps {
+                        script {
+                            sh """
+                                if [ -z "\$(docker network ls --filter name=^msa-net\$ --format='{{ .Name }}')" ]; then
+                                  echo "Creating msa-net network..."
+                                  docker network create msa-net
+                                else
+                                  echo "Docker network msa-net already exists"
+                                fi
+                            """
+                        }
+                    }
+                }
+
 
         stage('Prepare .env and Run config-service') {
             steps {
@@ -59,6 +75,7 @@ pipeline {
 
                         ${DOCKER} run -e SSH_PRIVATE_KEY="$(cat ${WORKSPACE}/id_rsa)" \
                         --name config-service -d -p 8888:8888 \
+                        --network msa-net \
                         --env-file ${WORKSPACE}/.env \
                         jongmin627/config-service
                     '''
