@@ -2,72 +2,68 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_PATH = './docker-compose.yml'
+        DOCKER = 'docker'
+        NETWORK = 'msa-net'
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
                 checkout scm
-                echo '✅ 코드 클론 완료'
+                echo '✅ SCM 클론 성공'
             }
         }
 
-        stage('Build config-service JAR') {
+        stage('Build config-service image') {
             steps {
-                sh '''
-                    chmod +x ./gradlew
-                    ./gradlew :config-service:clean :config-service:build -x test
-                '''
+                dir('config-service') {
+                    sh '''
+                        chmod +x ./gradlew
+                        ./gradlew clean build --build-cache
+                        ${DOCKER} build -t jongmin627/config-service .
+                    '''
+                }
+                echo '✅ config-service Docker Image 빌드 성공'
             }
         }
 
-        stage('Build eureka-service JAR') {
+        stage('Create Docker Network if Not Exists') {
             steps {
-                sh '''
-                    ./gradlew :eureka-service:clean :eureka-service:build -x test
-                '''
-            }
-        }
-
-        stage('Build gateway-service JAR') {
-            steps {
-                sh '''
-                    ./gradlew :gateway-service:clean :gateway-service:build -x test
-                '''
-            }
-        }
-
-        stage('Create Docker Network if not exists') {
-            steps {
-                sh '''
-                    if [ -z "$(docker network ls --filter name=^app-network$ --format '{{ .Name }}')" ]; then
-                        echo "📡 Docker network 'app-network' 생성 중..."
-                        docker network create app-network
+                sh """
+                    if [ -z "\$(${DOCKER} network ls --filter name=^${NETWORK}$ --format='{{ .Name }}')" ]; then
+                        echo "📡 Docker network '${NETWORK}' 생성 중..."
+                        ${DOCKER} network create ${NETWORK}
                     else
-                        echo "✅ Docker network 'app-network' 이미 존재함"
+                        echo "✅ Docker network '${NETWORK}' 이미 존재함"
                     fi
-                '''
+                """
             }
         }
 
-        stage('Docker Compose Deploy') {
+        stage('Prepare .env and Launch config-service') {
             steps {
                 withCredentials([
                     file(credentialsId: 'env-file-secret', variable: 'ENV_FILE'),
                     string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY')
                 ]) {
                     sh '''
-                        cp $ENV_FILE .env
-                        printf "%b" "$SSH_PRIVATE_KEY" > id_rsa
-                        chmod 600 id_rsa
+                        cp $ENV_FILE ${WORKSPACE}/.env
+                        printf "%b" "$SSH_PRIVATE_KEY" > ${WORKSPACE}/id_rsa
+                        chmod 600 ${WORKSPACE}/id_rsa
 
-                        echo "🛠️ Docker Compose로 서비스 전체 배포 중..."
-                        docker compose -f ${DOCKER_COMPOSE_PATH} down || true
-                        docker compose -f ${DOCKER_COMPOSE_PATH} up -d --build
+                        ${DOCKER} stop config-service || true
+                        ${DOCKER} rm config-service || true
+
+                        ${DOCKER} run -d \
+                            --name config-service \
+                            --network ${NETWORK} \
+                            --env-file ${WORKSPACE}/.env \
+                            -p 8888:8888 \
+                            -v ${WORKSPACE}/id_rsa:/root/.ssh/id_rsa:ro \
+                            jongmin627/config-service
                     '''
+                    echo '🚀 config-service 실행 완료'
                 }
-                echo '🚀 config, eureka, gateway 서버 Docker Compose로 배포 완료'
             }
         }
     }
