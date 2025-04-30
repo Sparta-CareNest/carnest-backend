@@ -15,13 +15,11 @@ pipeline {
 
         stage('Build caregiver-service image') {
             steps {
-                dir('caregiver-service') {
-                    sh '''
-                        ls -al
-                        gradle clean build
-                        ${DOCKER} build -t jongmin627/caregiver-service .
-                    '''
-                }
+                sh '''
+                    chmod +x ./gradlew
+                    ./gradlew :caregiver-service:build
+                    docker build -t jongmin627/caregiver-service caregiver-service/
+                '''
                 echo '✅ caregiver-service Docker Image 빌드 성공'
             }
         }
