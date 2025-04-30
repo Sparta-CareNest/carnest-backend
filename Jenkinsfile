@@ -13,23 +13,27 @@ pipeline {
             }
         }
 
-        stage('Build All Services Sequentially') {
+        stage('Build config-service JAR') {
             steps {
                 sh '''
                     chmod +x ./gradlew
+                    ./gradlew :config-service:clean :config-service:build -x test
+                '''
+            }
+        }
 
-                    # Gradle 옵션 최적화
-                    echo "org.gradle.daemon=false" >> gradle.properties
-                    echo "org.gradle.jvmargs=-Xmx512m" >> gradle.properties
+        stage('Build eureka-service JAR') {
+            steps {
+                sh '''
+                    ./gradlew :eureka-service:clean :eureka-service:build -x test
+                '''
+            }
+        }
 
-                    # 순차 빌드
-                    ./gradlew :config-service:build --build-cache -x test
-                    ./gradlew :eureka-service:build --build-cache -x test
-                    ./gradlew :gateway-service:build --build-cache -x test
-                    ./gradlew :user-service:bootJar --build-cache -x test
-                    ./gradlew :caregiver-service:bootJar --build-cache -x test
-                    ./gradlew :payment-service:bootJar --build-cache -x test
-                    ./gradlew :reservation-service:bootJar --build-cache -x test
+        stage('Build gateway-service JAR') {
+            steps {
+                sh '''
+                    ./gradlew :gateway-service:clean :gateway-service:build -x test
                 '''
             }
         }
@@ -63,7 +67,7 @@ pipeline {
                         docker compose -f ${DOCKER_COMPOSE_PATH} up -d --build
                     '''
                 }
-                echo '🚀 config, eureka, gateway 및 기타 서비스 Docker Compose로 배포 완료'
+                echo '🚀 config, eureka, gateway 서버 Docker Compose로 배포 완료'
             }
         }
     }
