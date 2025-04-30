@@ -49,8 +49,7 @@ pipeline {
                         echo "SSH_PASSPHRASE=$SSH_PASSPHRASE" >> ${WORKSPACE}/.env
                         printf "%b" "$SSH_PRIVATE_KEY" > ${WORKSPACE}/id_rsa
                         chmod 600 ${WORKSPACE}/id_rsa
-                        export SSH_PRIVATE_KEY="$(cat ${WORKSPACE}/id_rsa)"
-                        echo "SSH_PRIVATE_KEY=\"$SSH_PRIVATE_KEY\"" >> ${WORKSPACE}/.env
+
 
                     '''
 
@@ -58,7 +57,8 @@ pipeline {
                         ${DOCKER} stop config-service || true
                         ${DOCKER} rm config-service || true
 
-                        ${DOCKER} run -v /home/codejomo99/env:${WORKSPACE} --name config-service -d -p 8888:8888 \
+                        ${DOCKER} run -e SSH_PRIVATE_KEY="$(cat ${WORKSPACE}/id_rsa)" \
+                        --name config-service -d -p 8888:8888 \
                         --env-file ${WORKSPACE}/.env \
                         jongmin627/config-service
                     '''
