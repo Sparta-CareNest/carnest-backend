@@ -3,37 +3,19 @@ pipeline {
 
     environment {
         DOCKER = 'docker'
-        SERVICE_DIR = 'eureka-service'
     }
 
     stages {
-        stage('Check Changed Files') {
-            steps {
-                script {
-                    def changedFiles = getChangedFiles()
-                    def isChanged = changedFiles.any { it.startsWith("${SERVICE_DIR}/") }
-
-                    if (!isChanged) {
-                        echo "❌ No changes in ${SERVICE_DIR}. Skipping build."
-                        currentBuild.result = 'NOT_BUILT'
-                        return
-                    } else {
-                        echo "✅ Detected changes in ${SERVICE_DIR}. Continuing build."
-                    }
-                }
-            }
-        }
-
         stage('Clone Repository') {
             steps {
                 checkout scm
-                echo '✅ SCM 클론 성공'
+                echo 'Checkout SCM 성공'
             }
         }
 
         stage('Build image') {
             steps {
-                dir("${SERVICE_DIR}") {
+                dir('eureka-service') {
                     sh '''
                         ls -al
                         chmod +x ./gradlew
@@ -41,7 +23,7 @@ pipeline {
                         ${DOCKER} build -t jongmin627/eureka-service .
                     '''
                 }
-                echo '✅ Build Docker Image 성공'
+                echo 'Build Docker Image 성공'
             }
         }
 
@@ -53,7 +35,7 @@ pipeline {
                         ${DOCKER} rm eureka-service || true
                     """
                 }
-                echo '🧹 이전 컨테이너 제거 완료 (없는 경우 무시)'
+                echo '이전 컨테이너 제거 완료 (없는 경우 무시)'
             }
         }
 
@@ -79,15 +61,8 @@ pipeline {
                      --network msa-net \
                      -d -p 8761:8761 jongmin627/eureka-service
                 """
-                echo '🚀 새로운 Eureka-Service 컨테이너 실행 성공'
+                echo '새로운 Eureka-Service 컨테이너 실행 성공'
             }
         }
     }
-}
-
-def getChangedFiles() {
-    return sh(
-        script: 'git fetch origin feature/cicd && git diff --name-only origin/feature/cicd...HEAD',
-        returnStdout: true
-    ).trim().split('\n')
 }
