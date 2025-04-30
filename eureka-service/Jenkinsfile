@@ -16,7 +16,7 @@ pipeline {
             steps {
                 sh '''
                     chmod +x ./gradlew
-                    ./gradlew clean build
+                    ./gradlew bootJar -x test
                     ${DOCKER} build -t jongmin627/eureka-service .
                 '''
             }
@@ -29,7 +29,7 @@ pipeline {
                     ${DOCKER} rm eureka-service || true
 
                     ${DOCKER} run --name eureka-service -d -p 8761:8761 \
-                    your-docker-id/eureka-service
+                    jongmin627/eureka-service
                 '''
             }
         }

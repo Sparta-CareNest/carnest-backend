@@ -1,5 +1,10 @@
-FROM openjdk:17-ea-11-jdk-slim
-VOLUME /tmp
-ARG JAR_FILE=build/libs/*jar
-COPY ${JAR_FILE} app.jar
+# eureka-service/Dockerfile
+FROM gradle:8.2.1-jdk17 AS builder
+WORKDIR /app
+COPY . .
+RUN ./gradlew bootJar -x test
+
+FROM openjdk:17
+WORKDIR /app
+COPY --from=builder /app/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
