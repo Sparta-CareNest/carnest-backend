@@ -1,5 +1,31 @@
-FROM openjdk:17-ea-11-jdk-slim
-VOLUME /tmp
-ARG JAR_FILE=build/libs/*jar
-COPY ${JAR_FILE} app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+FROM gradle:8.5-jdk17 AS builder
+
+WORKDIR /app
+
+# 빌드 캐시를 위해 Gradle 파일 먼저 복사
+COPY eureka-service/build.gradle eureka-service/settings.gradle ./
+COPY eureka-service/gradle ./gradle
+
+# 의존성 다운로드 (캐싱 활용)
+RUN gradle dependencies --no-daemon
+
+# 소스 코드 복사
+COPY eureka-service/src ./src
+
+# 애플리케이션 빌드
+RUN gradle build -x test --no-daemon
+
+# 런타임 스테이지
+FROM openjdk:17-jdk-slim
+
+WORKDIR /app
+
+# curl 설치 추가
+RUN apt-get update && apt-get install -y curl && apt-get clean
+
+# 빌드 스테이지에서 생성된 JAR 파일만 복사
+COPY --from=builder /app/build/libs/*.jar /app/app.jar
+
+EXPOSE 8761
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
