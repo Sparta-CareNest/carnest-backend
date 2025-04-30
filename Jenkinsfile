@@ -62,10 +62,7 @@ pipeline {
                         printf "%b" "$SSH_PRIVATE_KEY" > id_rsa
                         chmod 600 id_rsa
 
-                        echo "SPRING_CLOUD_CONFIG_SERVER_GIT_PRIVATEKEY=$(cat id_rsa)" >> .env
-
                         echo "🛠️ Docker Compose로 서비스 전체 배포 중..."
-
                         docker compose --env-file .env -f ${DOCKER_COMPOSE_PATH} down || true
                         docker compose --env-file .env -f ${DOCKER_COMPOSE_PATH} up -d --build
                     '''

@@ -8,6 +8,8 @@ services:
       dockerfile: ./config-service/Dockerfile
     ports:
       - "8888:8888"
+    volumes:
+      - ./id_rsa:/run/secrets/id_rsa:ro
     env_file: .env
     networks:
       - app-network
