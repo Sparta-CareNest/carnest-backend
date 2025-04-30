@@ -2,68 +2,72 @@ pipeline {
     agent any
 
     environment {
-        DOCKER = 'docker'
-        NETWORK = 'msa-net'
+        DOCKER_COMPOSE_PATH = './docker-compose.yml'
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Checkout') {
             steps {
                 checkout scm
-                echo '✅ SCM 클론 성공'
+                echo '✅ 코드 클론 완료'
             }
         }
 
-        stage('Build config-service image') {
+        stage('Build config-service JAR') {
             steps {
-                dir('config-service') {
-                    sh '''
-                        chmod +x ./gradlew
-                        ./gradlew clean build --build-cache
-                        ${DOCKER} build -t jongmin627/config-service .
-                    '''
-                }
-                echo '✅ config-service Docker Image 빌드 성공'
+                sh '''
+                    chmod +x ./gradlew
+                    ./gradlew :config-service:clean :config-service:build -x test
+                '''
             }
         }
 
-        stage('Create Docker Network if Not Exists') {
+        stage('Build eureka-service JAR') {
             steps {
-                sh """
-                    if [ -z "\$(${DOCKER} network ls --filter name=^${NETWORK}$ --format='{{ .Name }}')" ]; then
-                        echo "📡 Docker network '${NETWORK}' 생성 중..."
-                        ${DOCKER} network create ${NETWORK}
+                sh '''
+                    ./gradlew :eureka-service:clean :eureka-service:build -x test
+                '''
+            }
+        }
+
+        stage('Build gateway-service JAR') {
+            steps {
+                sh '''
+                    ./gradlew :gateway-service:clean :gateway-service:build -x test
+                '''
+            }
+        }
+
+        stage('Create Docker Network if not exists') {
+            steps {
+                sh '''
+                    if [ -z "$(docker network ls --filter name=^app-network$ --format '{{ .Name }}')" ]; then
+                        echo "📡 Docker network 'app-network' 생성 중..."
+                        docker network create app-network
                     else
-                        echo "✅ Docker network '${NETWORK}' 이미 존재함"
+                        echo "✅ Docker network 'app-network' 이미 존재함"
                     fi
-                """
+                '''
             }
         }
 
-        stage('Prepare .env and Launch config-service') {
+        stage('Docker Compose Deploy') {
             steps {
                 withCredentials([
                     file(credentialsId: 'env-file-secret', variable: 'ENV_FILE'),
                     string(credentialsId: 'ssh-private-key', variable: 'SSH_PRIVATE_KEY')
                 ]) {
                     sh '''
-                        cp $ENV_FILE ${WORKSPACE}/.env
-                        printf "%b" "$SSH_PRIVATE_KEY" > ${WORKSPACE}/id_rsa
-                        chmod 600 ${WORKSPACE}/id_rsa
+                        cp $ENV_FILE .env
+                        printf "%b" "$SSH_PRIVATE_KEY" > id_rsa
+                        chmod 600 id_rsa
 
-                        ${DOCKER} stop config-service || true
-                        ${DOCKER} rm config-service || true
-
-                        ${DOCKER} run -d \
-                            --name config-service \
-                            --network ${NETWORK} \
-                            --env-file ${WORKSPACE}/.env \
-                            -p 8888:8888 \
-                            -v ${WORKSPACE}/id_rsa:/root/.ssh/id_rsa:ro \
-                            jongmin627/config-service
+                        echo "🛠️ Docker Compose로 서비스 전체 배포 중..."
+                        docker compose --env-file .env -f ${DOCKER_COMPOSE_PATH} down || true
+                        docker compose --env-file .env -f ${DOCKER_COMPOSE_PATH} up -d --build
                     '''
-                    echo '🚀 config-service 실행 완료'
                 }
+                echo '🚀 config, eureka, gateway 서버 Docker Compose로 배포 완료'
             }
         }
     }
