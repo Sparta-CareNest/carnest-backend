@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DOCKER = 'docker'
+
     }
 
     stages {
