@@ -1,0 +1,64 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER = 'docker'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout scm
+                echo '✅ SCM 클론 성공'
+            }
+        }
+
+        stage('Build gateway-service image') {
+            steps {
+                dir('gateway-service') {
+                    sh '''
+                        chmod +x ./gradlew
+                        ./gradlew clean build
+                        ${DOCKER} build -t jongmin627/gateway-service .
+                    '''
+                }
+                echo '✅ gateway-service Docker Image 빌드 성공'
+            }
+        }
+
+        stage('Remove Previous gateway-service container') {
+            steps {
+                sh '''
+                    ${DOCKER} stop gateway-service || true
+                    ${DOCKER} rm gateway-service || true
+                '''
+                echo '🧹 이전 gateway-service 컨테이너 제거 완료'
+            }
+        }
+
+        stage('Create Docker Network if not exists') {
+            steps {
+                sh '''
+                    if [ -z "$(docker network ls --filter name=^msa-net$ --format='{{ .Name }}')" ]; then
+                      echo "Creating msa-net network..."
+                      docker network create msa-net
+                    else
+                      echo "Docker network msa-net already exists"
+                    fi
+                '''
+            }
+        }
+
+        stage('Run New gateway-service container') {
+            steps {
+                sh '''
+                    ${DOCKER} run --name gateway-service \
+                    --network msa-net \
+                    -d -p 8000:8000 \
+                    jongmin627/gateway-service
+                '''
+                echo '🚀 gateway-service 컨테이너 실행 완료'
+            }
+        }
+    }
+}
