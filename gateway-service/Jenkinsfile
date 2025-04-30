@@ -17,9 +17,10 @@ pipeline {
             steps {
                 dir('gateway-service') {
                     sh '''
+                        ls -al
                         chmod +x ./gradlew
                         ./gradlew clean build
-                        ${DOCKER} build -t jongmin627/gateway-service .
+                        ${DOCKER} build -t jongmin627/eureka-service .
                     '''
                 }
                 echo '✅ gateway-service Docker Image 빌드 성공'
@@ -28,37 +29,39 @@ pipeline {
 
         stage('Remove Previous gateway-service container') {
             steps {
-                sh '''
+                sh """
                     ${DOCKER} stop gateway-service || true
                     ${DOCKER} rm gateway-service || true
-                '''
+                """
                 echo '🧹 이전 gateway-service 컨테이너 제거 완료'
             }
         }
 
         stage('Create Docker Network if not exists') {
-            steps {
-                sh '''
-                    if [ -z "$(docker network ls --filter name=^msa-net$ --format='{{ .Name }}')" ]; then
-                      echo "Creating msa-net network..."
-                      docker network create msa-net
-                    else
-                      echo "Docker network msa-net already exists"
-                    fi
-                '''
-            }
+                    steps {
+                        script {
+                            sh """
+                                if [ -z "\$(docker network ls --filter name=^msa-net\$ --format='{{ .Name }}')" ]; then
+                                  echo "Creating msa-net network..."
+                                  docker network create msa-net
+                                else
+                                  echo "Docker network msa-net already exists"
+                                fi
+                            """
+                        }
+                    }
+                }
         }
 
-        stage('Run New gateway-service container') {
-            steps {
-                sh '''
-                    ${DOCKER} run --name gateway-service \
-                    --network msa-net \
-                    -d -p 8000:8000 \
-                    jongmin627/gateway-service
-                '''
-                echo '🚀 gateway-service 컨테이너 실행 완료'
-            }
+        stage('Run New container') {
+                steps {
+                    sh """
+                        ${DOCKER} run --name gateway-service \
+                         --network msa-net \
+                         -d -p 8000:8000 jongmin627/gateway-service
+                    """
+                    echo '새로운 Gateway-Service 컨테이너 실행 성공'
+                }
         }
     }
 }
