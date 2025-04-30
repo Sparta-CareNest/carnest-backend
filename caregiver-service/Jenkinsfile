@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER = 'docker'
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                checkout scm
+                echo '✅ SCM 클론 성공'
+            }
+        }
+
+        stage('Build caregiver-service image') {
+            steps {
+                dir('caregiver-service') {
+                    sh '''
+                        ls -al
+                        chmod +x ./gradlew
+                        ./gradlew clean build
+                        ${DOCKER} build -t jongmin627/caregiver-service .
+                    '''
+                }
+                echo '✅ caregiver-service Docker Image 빌드 성공'
+            }
+        }
+
+        stage('Remove Previous caregiver-service container') {
+            steps {
+                sh """
+                    ${DOCKER} stop caregiver-service || true
+                    ${DOCKER} rm caregiver-service || true
+                """
+                echo '🧹 이전 caregiver-service 컨테이너 제거 완료'
+            }
+        }
+
+        stage('Create Docker Network if not exists') {
+            steps {
+                script {
+                    sh """
+                        if [ -z "\$(docker network ls --filter name=^msa-net\$ --format='{{ .Name }}')" ]; then
+                          echo "Creating msa-net network..."
+                          docker network create msa-net
+                        else
+                          echo "Docker network msa-net already exists"
+                        fi
+                    """
+                }
+            }
+        }
+
+        stage('Run New caregiver-service container') {
+            steps {
+                sh """
+                    ${DOCKER} run --name caregiver-service \
+                     --network msa-net \
+                     -d -p 9020:9020 jongmin627/caregiver-service
+                """
+                echo '🚀 caregiver-service 컨테이너 실행 성공'
+            }
+        }
+    }
+}
