@@ -13,7 +13,40 @@ pipeline {
             }
         }
 
-        stage('Prepare Env & SSH Key') {
+        stage('Build config-server JAR') {
+            steps {
+                dir('config-server') {
+                    sh '''
+                        chmod +x ../gradlew
+                        ../gradlew :config-server:clean :config-server:build -x test
+                    '''
+                }
+            }
+        }
+
+        stage('Build eureka-server JAR') {
+            steps {
+                dir('eureka-server') {
+                    sh '''
+                        chmod +x ../gradlew
+                        ../gradlew :eureka-server:clean :eureka-server:build -x test
+                    '''
+                }
+            }
+        }
+
+        stage('Build gateway-server JAR') {
+            steps {
+                dir('gateway-server') {
+                    sh '''
+                        chmod +x ../gradlew
+                        ../gradlew :gateway-server:clean :gateway-server:build -x test
+                    '''
+                }
+            }
+        }
+
+        stage('Docker Compose Deploy') {
             steps {
                 withCredentials([
                     file(credentialsId: 'env-file-secret', variable: 'ENV_FILE'),
@@ -23,19 +56,13 @@ pipeline {
                         cp $ENV_FILE .env
                         printf "%b" "$SSH_PRIVATE_KEY" > id_rsa
                         chmod 600 id_rsa
+
+                        echo "🛠️ Docker Compose로 서비스 전체 배포 중..."
+                        docker compose -f ${DOCKER_COMPOSE_PATH} down || true
+                        docker compose -f ${DOCKER_COMPOSE_PATH} up -d --build
                     '''
                 }
-            }
-        }
-
-        stage('Docker Compose Up') {
-            steps {
-                sh '''
-                    echo "🛠️ Docker Compose로 서비스 전체 배포 중..."
-                    docker compose --env-file .env down || true
-                    docker compose --env-file .env up -d --build --remove-orphans
-                '''
-                echo '🚀 전체 서비스 Docker Compose로 배포 완료'
+                echo '🚀 config, eureka, gateway 서버 Docker Compose로 배포 완료'
             }
         }
     }
